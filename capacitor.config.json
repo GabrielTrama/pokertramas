@@ -1,6 +1,6 @@
 {
   "appId": "com.pokertramas.app",
-  "appName": "PokerTramaS",
+  "appName": "PokerTrama",
   "webDir": "www",
   "server": { "androidScheme": "https" },
   "android": { "backgroundColor": "#22140F" }

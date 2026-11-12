@@ -1,6 +1,6 @@
 {
-  "name": "PokerTramaS",
-  "short_name": "PokerTramaS",
+  "name": "PokerTrama",
+  "short_name": "PokerTrama",
   "description": "Poker Texas Hold'em com os amigos. Entre com o ID da mesa e a senha.",
   "start_url": "./",
   "scope": "./",

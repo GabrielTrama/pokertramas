@@ -58,8 +58,8 @@ test('potes paralelos', () => {
 });
 
 /* ---------- helpers de mesa ---------- */
-function table(n, stacks) {
-  const st = G.createRoomState('ABCDE', 'u0', 'P0', { startingStack: 1000, smallBlind: 10, bigBlind: 20 });
+function table(n, stacks, extra = {}) {
+  const st = G.createRoomState('ABCDE', 'u0', 'P0', { mode: 'cash', startingStack: 1000, smallBlind: 10, bigBlind: 20, timeBankSeconds: 0, ...extra });
   for (let i = 1; i < n; i++) G.addPlayer(st, 'u' + i, 'P' + i);
   if (stacks) stacks.forEach((v, i) => { st.seats[i].stack = v; });
   return st;
@@ -157,6 +157,7 @@ test('30 s sem jogar: passa/desiste e fica offline; offline joga na hora', () =>
   const st = table(3);
   const ctx = G.startHand(st, 0, noShuffle());
   assert.equal(st.settings.turnSeconds, 30);
+  assert.equal(st.seats[0].timeBank, 0);
   assert.equal(st.deadline, 30000);
   assert.equal(G.tick(st, ctx, 29999), null);
   G.tick(st, ctx, 30000);
@@ -221,7 +222,7 @@ test('simulação: 20 mil mãos aleatórias mantêm as fichas e o estado válido
     let total = G.totalChips(st);
     let now = 0;
     for (let hand = 0; hand < 50; hand++) {
-      if (st.seats.filter(G.canPlayNextHand).length < 2) {
+      if (st.seats.filter((x) => G.canPlayNextHand(st, x)).length < 2) {
         // recompra para continuar
         for (const s of st.seats) if (s && s.stack === 0) { G.rebuy(st, s.uid); total += 1000; }
       }
@@ -256,4 +257,228 @@ test('simulação: 20 mil mãos aleatórias mantêm as fichas e o estado válido
     }
   }
   assert.ok(showdowns > 1000 && sidepots > 100 && splits > 10, `cobertura: ${showdowns}/${sidepots}/${splits}`);
+});
+
+
+/* ===================== novidades ===================== */
+
+test('padrão: torneio, 20.000 fichas, 100/200 com ante 30, 8 min, banco 60 s, reentrada até o nível 8', () => {
+  const st = G.createRoomState('X', 'a', 'A', {});
+  assert.equal(st.settings.mode, 'torneio');
+  assert.equal(st.settings.startingStack, 20000);
+  assert.deepEqual([st.blinds.sb, st.blinds.bb, st.blinds.ante, st.settings.levelMinutes], [100, 200, 30, 8]);
+  assert.equal(st.settings.reentryLevels, 8);
+  assert.equal(st.seats[0].timeBank, 60000);
+  assert.equal(st.settings.allowRebuy, false);
+});
+
+test('estrutura igual à tabela: 8 min até 400/800, depois 5 min', () => {
+  const st = G.createRoomState('X', 'a', 'A', {});
+  const t = G.structure(st);
+  const fmt = (l) => `${l.sb}/${l.bb}/${l.ante}/${l.ms / 60000}`;
+  assert.deepEqual(t.slice(0, 11).map(fmt), [
+    '100/200/30/8', '125/250/35/8', '150/300/45/8', '200/400/60/8', '250/500/75/8', '300/600/90/8',
+    '350/700/100/8', '400/800/120/8', '500/1000/150/5', '600/1200/180/5', '750/1500/200/5']);
+});
+
+test('banco de tempo: entra quando os 30 s acabam e desconta o que usou', () => {
+  const st = table(3, null, { timeBankSeconds: 60 });
+  const ctx = G.startHand(st, 0, noShuffle());
+  assert.equal(G.tick(st, ctx, 30000).type, 'bank');
+  assert.equal(st.usingBank, true);
+  assert.equal(st.deadline, 90000);
+  assert.equal(st.seats[0].folded, false);
+  G.act(st, ctx, 'u0', 'call', 0, 50000);
+  assert.equal(st.seats[0].timeBank, 40000);
+  assert.equal(st.usingBank, false);
+  assert.equal(st.deadline, 80000);
+});
+
+test('banco de tempo esgotado: joga sozinho e fica offline', () => {
+  const st = table(3, null, { timeBankSeconds: 60 });
+  const ctx = G.startHand(st, 0, noShuffle());
+  G.tick(st, ctx, 30000);
+  G.tick(st, ctx, 90000);
+  assert.equal(st.seats[0].folded, true);
+  assert.equal(st.seats[0].sitOut, true);
+  assert.equal(st.seats[0].timeBank, 0);
+});
+
+test('mostrar ou esconder: vencedor sem showdown pode mostrar', () => {
+  const st = table(3);
+  const ctx = G.startHand(st, 0, noShuffle());
+  G.act(st, ctx, 'u0', 'fold');
+  G.act(st, ctx, 'u1', 'fold');
+  assert.deepEqual(st.showOffer, { seat: 2, handNumber: 1 });
+  assert.throws(() => G.showCards(st, ctx, 'u0'), /mostrar/);
+  G.showCards(st, ctx, 'u2');
+  assert.deepEqual(st.seats[2].shown, ctx.hands.u2);
+  assert.equal(st.showOffer, null);
+});
+
+test('estatísticas: mãos vencidas, maior pote e melhor mão', () => {
+  const st = table(2);
+  const ctx = G.startHand(st, 0, noShuffle());
+  G.act(st, ctx, 'u0', 'raise', 1000);
+  G.act(st, ctx, 'u1', 'call');
+  const winner = st.results[0].winners[0];
+  assert.equal(st.stats[st.seats[winner.seat].uid].handsWon, 1);
+  assert.equal(st.stats.u0.handsPlayed, 1);
+  assert.equal(st.records.biggestPot.amount, 2000);
+  assert.ok(st.records.bestHand && st.records.bestHand.by === winner.name);
+});
+
+function tourney(n, extra = {}) {
+  const st = G.createRoomState('T', 'u0', 'P0', { timeBankSeconds: 0, reentryLevels: 0, ...extra });
+  for (let i = 1; i < n; i++) G.addPlayer(st, 'u' + i, 'P' + i);
+  return st;
+}
+
+test('torneio: antes e blinds; nível sobe pelo relógio e vale na mão seguinte', () => {
+  const st = tourney(3);
+  let ctx = G.startHand(st, 0, noShuffle());
+  assert.equal(G.totalChips(st), 60000);
+  // todos pagaram ante 30; SB 100, BB 200
+  assert.deepEqual(st.seats.slice(0, 3).map((s) => s.committed), [30, 130, 230]);
+  assert.equal(st.tourney.nextLevelAt, 8 * 60000);
+  G.act(st, ctx, 'u0', 'fold', 0, 1000);
+  G.act(st, ctx, 'u1', 'fold', 0, 1000);
+  ctx = G.tick(st, ctx, 8 * 60000 + 1).ctx;
+  assert.deepEqual([st.blinds.sb, st.blinds.bb, st.blinds.ante, st.blinds.level], [125, 250, 35, 1]);
+  assert.ok(st.log.some((l) => l.includes('Blinds subiram para 125/250 (ante 35)')));
+  // nível 9 (500/1000) começa em 64 min e dura 5 min
+  G.act(st, ctx, st.seats[st.toAct].uid, 'fold', 0, 8 * 60000 + 2);
+  if (G.handActive(st)) G.act(st, ctx, st.seats[st.toAct].uid, 'fold', 0, 8 * 60000 + 3);
+  ctx = G.tick(st, ctx, 64 * 60000 + 1).ctx;
+  assert.equal(st.blinds.bb, 1000);
+  assert.equal(st.tourney.nextLevelAt, 69 * 60000);
+});
+
+test('torneio sem reentrada: eliminação, pódio, quem chega assiste, novo torneio', () => {
+  const st = tourney(3);
+  st.seats[1].stack = 300; st.seats[2].stack = 200;
+  const ctx = G.startHand(st, 0, noShuffle());
+  assert.throws(() => G.addPlayer(st, 'novo', 'Novo'), (e) => e instanceof G.SpectatorError);
+  G.act(st, ctx, 'u0', 'raise', 5000);
+  if (G.handActive(st)) G.act(st, ctx, 'u1', 'call');
+  assert.equal(st.phase, 'showdown');
+  const alive = st.seats.filter((s) => s && s.stack > 0);
+  if (alive.length === 1) {
+    assert.equal(st.tourney.finished, true);
+    assert.deepEqual(st.tourney.places.map((p) => p.place), [1, 2, 3]);
+    assert.equal(st.stats[alive[0].uid].tourneyWins, 1);
+    G.newTournament(st);
+    assert.ok(st.seats.every((s) => !s || (s.stack === 20000 && !s.eliminated && s.rebuys === 0)));
+    G.addPlayer(st, 'novo', 'Novo');
+  }
+});
+
+test('reentrada: quem quebra volta com 20.000 e conta reentradas; depois do nível 8 é eliminado', () => {
+  const st = tourney(3, { reentryLevels: 8 });
+  st.seats[2].stack = 230; // só dá para ante + BB
+  let ctx = G.startHand(st, 0, noShuffle());
+  ctx.hands.u1 = ['As', 'Ad']; ctx.hands.u2 = ['7c', '8d'];
+  G.act(st, ctx, 'u0', 'fold', 0, 10);
+  G.act(st, ctx, 'u1', 'raise', 1000, 10); // u2 já está all-in no BB
+  assert.equal(st.phase, 'showdown');
+  const u2 = st.seats[2];
+  assert.equal(u2.stack, 0);
+  {
+    assert.equal(u2.waitingReentry, true);
+    assert.equal(u2.eliminated, false);
+    assert.equal(st.tourney.finished, false);
+    G.reenter(st, 'u2', 20);
+    assert.equal(u2.stack, 20000);
+    assert.equal(u2.rebuys, 1);
+    // quebra de novo depois que a reentrada fechou → eliminado
+    u2.stack = 230;
+    ctx = G.tick(st, ctx, 70 * 60000).ctx;
+    while (G.handActive(st)) {
+      const s = st.seats[st.toAct]; const la = G.legalActions(st, st.toAct);
+      G.act(st, ctx, s.uid, la.canRaise && s.uid !== 'u2' ? 'raise' : 'call', la.maxRaiseTo, 70 * 60000);
+    }
+    if (u2.stack === 0) {
+      assert.equal(u2.eliminated, true);
+      assert.throws(() => G.reenter(st, 'u2', 70 * 60000), /reentrar|fechou/);
+    }
+  }
+});
+
+test('reentrada fecha pelo relógio com o jogo parado esperando', () => {
+  const st = tourney(2, { reentryLevels: 1 });
+  st.seats[1].stack = 230;
+  const ctx = G.startHand(st, 0, noShuffle());
+  ctx.hands.u0 = ['As', 'Ad']; ctx.hands.u1 = ['7c', '8d']; // u0 ganha com certeza
+  G.act(st, ctx, 'u0', 'raise', 5000, 10);
+  if (G.handActive(st)) G.act(st, ctx, 'u1', 'call', 0, 10);
+  const loser = st.seats.find((s) => s && s.stack === 0);
+  assert.ok(loser.waitingReentry);
+  assert.equal(G.tick(st, ctx, st.nextHandAt).type, 'waiting'); // só um com fichas: espera
+  assert.equal(st.tourney.finished, false);
+  assert.equal(G.tick(st, ctx, 8 * 60000 + 1).type, 'reentry-closed');
+  assert.equal(st.tourney.finished, true);
+  assert.deepEqual(st.tourney.places.map((p) => p.place), [1, 2]);
+});
+
+test('cash: depois da recompra o jogo recomeça sozinho', () => {
+  const st = table(2);
+  const ctx = G.startHand(st, 0, noShuffle());
+  ctx.hands.u0 = ['As', 'Ad']; ctx.hands.u1 = ['7c', '8d'];
+  G.act(st, ctx, 'u0', 'raise', 1000);
+  G.act(st, ctx, 'u1', 'call');
+  const broke = st.seats.find((s) => s && s.stack === 0);
+  assert.ok(broke);
+  {
+    assert.equal(G.tick(st, ctx, st.nextHandAt).type, 'waiting');
+    G.rebuy(st, broke.uid);
+    assert.equal(G.tick(st, ctx, st.nextHandAt + 1).type, 'nexthand');
+  }
+});
+
+test('torneio offline continua recebendo cartas e desiste sozinho', () => {
+  const st = tourney(3);
+  G.setSitOut(st, 'u1', true);
+  const ctx = G.startHand(st, 0, noShuffle());
+  assert.equal(st.seats[1].inHand, true);
+  G.act(st, ctx, 'u0', 'call', 0, 10);
+  assert.equal(st.toAct, 1);
+  G.tick(st, ctx, 11);
+  assert.equal(st.seats[1].folded, true);
+});
+
+test('simulação de torneios (com e sem reentrada): sempre termina com campeão e pódio completo', () => {
+  let seed = 777;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const randInt = (n) => Math.floor(rnd() * n);
+  for (let g = 0; g < 80; g++) {
+    const n = 2 + randInt(8);
+    const reentry = g % 2 ? 3 : 0;
+    const st = tourney(n, { levelMinutes: 1, reentryLevels: reentry });
+    let total = G.totalChips(st);
+    let now = 0;
+    let ctx = G.startHand(st, now, randInt);
+    let guard = 0;
+    while (!st.tourney.finished) {
+      assert.ok(guard++ < 40000, 'torneio não termina');
+      now += 4000;
+      for (const s of st.seats) {
+        if (s && s.waitingReentry && G.reentryOpen(st, now) && rnd() < 0.5) { G.reenter(st, s.uid, now); total += 20000; }
+      }
+      if (G.handActive(st)) {
+        const i = st.toAct; const s = st.seats[i];
+        const la = G.legalActions(st, i);
+        const r = rnd();
+        if (r < 0.3 && la.canRaise) G.act(st, ctx, s.uid, 'raise', la.maxRaiseTo, now);
+        else if (r < 0.45 && !la.canCheck) G.act(st, ctx, s.uid, 'fold', 0, now);
+        else G.act(st, ctx, s.uid, 'call', 0, now);
+        if (G.handActive(st)) assert.equal(G.totalChips(st), total);
+      } else {
+        const r = G.tick(st, ctx, Math.max(now, st.nextHandAt || 0), randInt);
+        if (r && r.ctx) ctx = r.ctx;
+      }
+    }
+    assert.equal(G.totalChips(st), total);
+    const places = st.tourney.places.map((p) => p.place);
+    assert.deepEqual(places, Array.from({ length: n }, (_, i) => i + 1), JSON.stringify(st.tourney.places));
+  }
 });
