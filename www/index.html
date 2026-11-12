@@ -305,10 +305,14 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
 .bet.in { animation: betin .35s ease-out .25s both; }
 @keyframes betin { from { opacity: 0; transform: translate(-50%, -50%) scale(.6); } }
 
-.show-box { display: flex; align-items: center; gap: 10px; background: rgba(6,10,8,.72); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 6px 10px; }
-.show-box > span { font-size: 13px; color: rgba(255,255,255,.8); font-weight: 600; }
-.show-opts { display: flex; align-items: center; gap: 6px; }
-.show-opts .card { --w: 30px; }
+/* mostrar as cartas depois que todos desistiram: fica no lugar dos botões de ação */
+.show-row { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 8px; }
+.show-row .btn { min-height: 58px; border-radius: 10px; border: 0; color: #F2F2F2; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px;
+  background: linear-gradient(180deg, #3B3C40, #26272A); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 4px 10px rgba(0,0,0,.45); }
+.show-row .btn.btn-fire { background: linear-gradient(180deg, #FF9A3D, #E2541B); color: #fff; }
+.show-row .btn:disabled { opacity: .5; }
+.show-row .card { --w: 28px; flex: none; pointer-events: none; }
+.show-row .btn span { pointer-events: none; }
 .show-card { border: 0; padding: 0; background: none; border-radius: 6px; transition: transform .12s; }
 .show-card .card { --w: 34px; box-shadow: 0 0 0 2px rgba(255,215,114,.0), 0 3px 8px rgba(0,0,0,.5); }
 .show-card:hover .card, .show-card:focus-visible .card { box-shadow: 0 0 0 2px var(--gold-hi), 0 3px 8px rgba(0,0,0,.5); }
@@ -649,10 +653,6 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
       <div class="pot" id="pot"></div>
       <div class="board" id="board"></div>
       <div class="msg" id="centerMsg"></div>
-      <div class="show-box" id="showBox" hidden>
-        <span>Mostrar</span>
-        <div class="show-opts" id="showOpts"></div>
-      </div>
       <button id="startBtn" class="btn btn-fire" hidden>Começar o jogo</button>
     </div>
     <div id="fx"></div>
@@ -687,6 +687,7 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
       <button data-pre="check" aria-pressed="false">Passar</button>
       <button data-pre="callany" aria-pressed="false">Pagar qualquer</button>
     </div>
+    <div class="show-row" id="showBox" hidden></div>
     <div class="waiting-note" id="waitNote"></div>
   </section>
 </div>
@@ -1674,14 +1675,7 @@ function render() {
   $('startBtn').textContent = E.isSpin(state) ? 'Sortear o prêmio e começar' : 'Começar o jogo';
   if (state.bombNext && state.phase !== 'waiting') msg += '<div class="note">💣 A próxima mão é bomb pot</div>';
   $('startBtn').disabled = seated < 2;
-  const canShow = showdown && state.showOffer && state.showOffer.seat === my && state.showOffer.handNumber === state.handNumber;
-  $('showBox').hidden = !canShow;
-  if (canShow && myHand && myHand.handNumber === state.handNumber) {
-    $('showOpts').innerHTML = `${myHand.cards.map((c) => cardHTML(c)).join('')}<button class="btn btn-small btn-light" data-show="both">Mostrar minhas cartas</button>`;
-    document.querySelectorAll('[data-show]').forEach((b) => {
-      b.onclick = () => send('show', { which: b.dataset.show === 'both' ? 'both' : +b.dataset.show });
-    });
-  }
+  renderShowBox(my);
 
   renderMe(my);
   updateTimers();
@@ -1756,6 +1750,28 @@ function placeDealer(wrap, g) {
   D.style.top = (best.cy / H * 100) + '%';
 }
 
+// Venceu sem showdown: botões para mostrar uma carta, a outra ou as duas.
+// Os botões só são recriados quando algo muda, senão um toque no meio de uma atualização se perdia.
+function canShowCards(my) {
+  return state.phase === 'showdown' && my >= 0 && state.showOffer && state.showOffer.seat === my && state.showOffer.handNumber === state.handNumber;
+}
+function renderShowBox(my) {
+  const box = $('showBox'), can = canShowCards(my);
+  box.hidden = !can;
+  if (!can) { box.dataset.key = ''; return; }
+  const sh = (state.seats[my] && state.seats[my].shown) || [];
+  const cards = myHand && myHand.handNumber === state.handNumber ? myHand.cards : null;
+  const key = `${state.handNumber}:${sh[0] ? 1 : 0}${sh[1] ? 1 : 0}:${cards ? 1 : 0}`;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  const one = (c, i) => `<button class="btn" data-show="${i}"${sh[i] ? ' disabled' : ''}>${cardHTML(c)}<span>${sh[i] ? 'Mostrada' : 'Mostrar'}</span></button>`;
+  box.style.gridTemplateColumns = cards ? '' : '1fr';
+  box.innerHTML = (cards ? cards.map(one).join('') : '') + `<button class="btn btn-fire" data-show="both">Mostrar as duas</button>`;
+  for (const b of box.querySelectorAll('[data-show]')) {
+    b.onclick = () => { b.disabled = true; send('show', { which: b.dataset.show === 'both' ? 'both' : +b.dataset.show }); };
+  }
+}
+
 function renderBlindsLine() {
   if (!state) return;
   const b = state.blinds;
@@ -1823,7 +1839,7 @@ function renderMe(my) {
   } else if (active() && !s.inHand) note = 'Você entra na próxima mão.';
   else if (state.phase === 'showdown' && !(state.tourney && state.tourney.finished)) note = 'Próxima mão em instantes…';
   $('waitNote').innerHTML = note;
-  $('waitNote').hidden = !!L || (canPre && !note);
+  $('waitNote').hidden = !!L || (canPre && !note) || canShowCards(my);
   if (canPre) $('waitNote').hidden = true;
   if ($('rebuyBtn')) $('rebuyBtn').onclick = () => send('rebuy');
   if ($('reenterBtn')) $('reenterBtn').onclick = () => send('reenter');

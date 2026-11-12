@@ -68,7 +68,7 @@ Valem no Cash e nos torneios, e o anfitrião liga ou desliga em "Ajustes da mesa
 - **Sua vez em outra aba** (computador): o título da aba pisca "🔔 Sua vez!" e toca um som.
 - **Pré-ações**: fora da sua vez, marque "Passar/Desistir", "Passar" ou "Pagar qualquer"; quando a vez chega, o app joga sozinho.
 - **Banco de tempo**: quando os 30 s acabam, entra o banco (barra vermelha). Acabou o banco, o jogo passa/desiste por você e você fica **offline** — toque no balão no canto para voltar.
-- **Mostrar cartas**: quando todo mundo desiste, quem ganhou pode tocar em "Mostrar minhas cartas".
+- **Mostrar cartas** (Cash, Torneio e Spin & Gold): quando todo mundo desiste, os botões de ação viram "Mostrar" — toque numa carta para mostrar só ela, depois na outra se quiser, ou em "Mostrar as duas".
 - **Revelação automática**: quando todos desistem, a mesa mostra a próxima rua que viria (fold no pré-flop → flop; no flop → turn; no turn → river). É só para ver; não muda o resultado.
 - **Reações e mensagens** (botão 😄): emojis, frases prontas ou uma mensagem digitada (até 60 letras) aparecem em balão sobre o jogador; as mensagens digitadas ficam no histórico.
 - **Sons e animações**: embaralhar, distribuir, fichas indo para o pote e para o vencedor. Dá para desligar o som no menu (•••).
