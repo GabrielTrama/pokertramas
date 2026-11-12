@@ -1,0 +1,22 @@
+{
+  "name": "pokertramas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PokerTramaS — poker entre amigos, mesa com ID e senha",
+  "scripts": {
+    "test": "node --test test/engine.test.js",
+    "android": "npx cap add android && npm run icons && npx cap sync android",
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "icons": "capacitor-assets generate --android --iconBackgroundColor '#22140F' --splashBackgroundColor '#22140F'"
+  },
+  "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0"
+  }
+}

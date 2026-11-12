@@ -1,0 +1,17 @@
+{
+  "name": "PokerTramaS",
+  "short_name": "PokerTramaS",
+  "description": "Poker Texas Hold'em com os amigos. Entre com o ID da mesa e a senha.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#22140F",
+  "theme_color": "#22140F",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
