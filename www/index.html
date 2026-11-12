@@ -727,6 +727,8 @@ const PEER_SERVER = params.get('peerhost')
 const PEER_OPTS = { ...PEER_SERVER, debug: 0 };
 const PING_MS = 4000;
 const DEAD_MS = 15000;
+const DROP_GRACE_MS = 20000;   // caiu a conexão: espera 20 s antes de marcar offline
+const AUTO_BACK_MS = 10 * 60e3; // voltou em até 10 min depois de cair: entra de novo sozinho
 const EMOJIS = ['😂', '🔥', '😱', '😎', '👏', '🤡', '💸', '🙏'];
 const PHRASES = ['Blefe!', 'Que sorte!', 'Bora!', 'Boa mão!', 'Pensa rápido!', 'All-in!', 'Tô fora', 'Desce mais!'];
 const REACTIONS = new Set([...EMOJIS, ...PHRASES]);
@@ -832,6 +834,7 @@ document.addEventListener('pointerdown', () => Sfx.unlock(), { capture: true });
    ================================================================== */
 const Host = {
   peer: null, conns: new Map(), lastSeen: new Map(), spectators: new Map(), lastReact: new Map(),
+  dropped: new Map(), // quem caiu a conexão: { at, sat } (sat = já foi marcado offline por isso)
   ctx: null, timer: null,
 
   open(id, pw, name, settings, restored) {
@@ -840,7 +843,11 @@ const Host = {
       let opened = false;
       peer.on('open', () => {
         opened = true; this.peer = peer;
-        if (restored) { state = restored.state; this.ctx = restored.ctx; }
+        if (restored) {
+          state = restored.state; this.ctx = restored.ctx;
+          const t0 = performance.now();
+          for (const uid of restored.back || []) this.dropped.set(uid, { at: t0, sat: true });
+        }
         else {
           state = E.createRoomState(id.toUpperCase(), myId, name, settings, Date.now(), myColor);
           this.ctx = { deck: [], hands: {} };
@@ -885,6 +892,13 @@ const Host = {
         this.conns.set(pid, conn);
         if (old && old !== conn) { try { old.close(); } catch {} }
         this.lastSeen.set(pid, performance.now());
+        // caiu e voltou logo (tela apagou, trocou de app, 4G oscilou): volta para a mesa sem tocar no balão
+        const d = this.dropped.get(pid);
+        if (d) {
+          this.dropped.delete(pid);
+          const si = E.seatOf(state, pid), st = si >= 0 ? state.seats[si] : null;
+          if (d.sat && st && st.sitOut && !st.eliminated && !st.waitingReentry && performance.now() - d.at < AUTO_BACK_MS) E.setSitOut(state, pid, false);
+        }
         this.broadcastAvatars();
         this.broadcastSeason();
         this.changed();
@@ -903,7 +917,11 @@ const Host = {
   lost(pid) {
     this.conns.delete(pid);
     const i = E.seatOf(state, pid);
-    if (i >= 0 && !state.seats[i].sitOut) { E.setSitOut(state, pid, true); this.changed(); }
+    if (i < 0) return;
+    // não marca offline na hora: dá um tempo para a pessoa reconectar sozinha
+    // conta a partir da última mensagem dele, não de quando percebemos a queda
+    if (!state.seats[i].sitOut && !this.dropped.has(pid)) this.dropped.set(pid, { at: this.lastSeen.get(pid) || performance.now(), sat: false });
+    this.changed();
   },
 
   broadcastSeason() {
@@ -996,6 +1014,12 @@ const Host = {
     for (const [pid, seen] of this.lastSeen) {
       if (this.conns.has(pid) && mono - seen > DEAD_MS) { const c = this.conns.get(pid); this.lost(pid); try { c.close(); } catch {} }
     }
+    for (const [pid, d] of this.dropped) {
+      if (d.sat || this.conns.has(pid) || mono - d.at < DROP_GRACE_MS) continue;
+      d.sat = true;
+      const i = E.seatOf(state, pid);
+      if (i >= 0 && !state.seats[i].sitOut) { E.setSitOut(state, pid, true); this.changed(); }
+    }
     const r = E.tick(state, this.ctx, t);
     if (r) { if (r.type === 'nexthand') this.ctx = r.ctx; this.changed(); }
     if (!this._lastPing || mono - this._lastPing > PING_MS) {
@@ -1030,7 +1054,7 @@ const Host = {
     for (const c of this.conns.values()) { try { c.send({ t: 'closed', msg: 'O anfitrião encerrou a mesa', summary: true }); } catch {} }
     const p = this.peer;
     setTimeout(() => { try { p && p.destroy(); } catch {} }, 500);
-    this.peer = null; this.conns.clear(); this.lastSeen.clear(); this.spectators.clear();
+    this.peer = null; this.conns.clear(); this.lastSeen.clear(); this.spectators.clear(); this.dropped.clear();
     lsSet('pt.host', null);
   },
 };
@@ -1404,8 +1428,9 @@ async function reopenHost() {
   for (let attempt = 0; attempt < 25; attempt++) {
     lobbyBusy(true, attempt ? `Reabrindo a mesa… (tentativa ${attempt + 1})` : 'Reabrindo a mesa…');
     try {
+      const back = hs.state.seats.filter((s) => s && s.uid !== myId && !s.sitOut).map((s) => s.uid);
       for (const s of hs.state.seats) if (s && s.uid !== myId) s.sitOut = true;
-      await Host.open(hs.id, hs.pw, null, null, { state: hs.state, ctx: hs.ctx });
+      await Host.open(hs.id, hs.pw, null, null, { state: hs.state, ctx: hs.ctx, back });
       lobbyBusy(false); $('lobbyErr').textContent = '';
       enterGame();
       return;
@@ -1832,9 +1857,10 @@ function renderMe(my) {
     const key = `${state.handNumber}-${state.phase}-${state.toAct}-${state.currentBet}`;
     if (key !== lastTurnKey) {
       lastTurnKey = key;
-      if (!runPreAction(L)) { Sfx.turn(); buzz(); }
+      if (!runPreAction(L)) { Sfx.turn(); buzz(); TurnAlert.start(); }
     }
   } else {
+    TurnAlert.stop();
     raiseOpen = false;
     $('raisePanel').hidden = true;
   }
@@ -2342,6 +2368,25 @@ function updateTimers() {
 setInterval(() => { if (mode === 'client') updateTimers(); }, 250);
 addEventListener('resize', () => { if (state) { prevSnap = null; render(); } });
 
+/* ---------- Aviso de "Sua vez!" quando o jogo está em outra aba ---------- */
+const TurnAlert = {
+  t: null, n: 0, base: document.title,
+  start() {
+    if (this.t || !document.hidden) return;
+    this.n = 0;
+    document.title = '🔔 Sua vez! – PokerTrama';
+    this.t = setInterval(() => {
+      this.n++;
+      document.title = this.n % 2 ? this.base : '🔔 Sua vez! – PokerTrama';
+      if (this.n % 8 === 0 && this.n <= 24) Sfx.turn(); // toca de novo a cada ~8 s (3 vezes)
+    }, 1000);
+  },
+  stop() {
+    if (!this.t) return;
+    clearInterval(this.t); this.t = null; document.title = this.base;
+  },
+};
+
 /* ---------- Tela sempre ligada ---------- */
 let wakeLock = null;
 const NativeAwake = window.Capacitor && window.Capacitor.registerPlugin ? window.Capacitor.registerPlugin('KeepAwake') : null;
@@ -2354,6 +2399,8 @@ function releaseAwake() {
   try { wakeLock && wakeLock.release(); } catch {} wakeLock = null;
 }
 document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') TurnAlert.stop();
+  else if (state && active() && state.toAct >= 0 && state.toAct === mySeatIdx()) TurnAlert.start();
   if (document.visibilityState === 'visible' && mode) {
     keepAwake();
     if (mode === 'client' && performance.now() - Client.lastMsg > 6000) Client.reconnectSoon();
