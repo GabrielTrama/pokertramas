@@ -37,18 +37,38 @@ Poker Texas Hold'em para jogar com os amigos, cada um no seu celular. Sem servid
 - Quem chega depois que a reentrada fechou assiste e entra no próximo torneio.
 - Em "Fichas e blinds" dá para mudar fichas, blinds iniciais (a tabela acompanha), minutos por nível e até qual nível vale a reentrada (0 = sem reentrada).
 
+## Spin & Gold
+
+Torneio rápido de 2 a 9 jogadores: 500 fichas, blinds 10/20 subindo a cada 3 minutos, sem reentrada. Ao começar, uma roleta sorteia o prêmio do campeão. Ao criar a mesa, o anfitrião escolhe os multiplicadores:
+- **Entre amigos**: ×2 (60%), ×3 (25%), ×5 (12%), ×10 (3%)
+- **Clássico GG**: ×2 (75%), ×3 (15%), ×5 (6,5%), ×10 (3%), ×25 (0,4%), ×100 (0,09%), ×1000 (0,01%)
+
+## Ranking da temporada
+
+Cada torneio vencido vale 1 ponto (Spin & Gold também), e o ranking zera a cada mês. Fica no lobby e no menu (•••), com os meses anteriores e o botão "Mandar no grupo".
+Não precisa de servidor: cada celular guarda os resultados e troca com a mesa quando vocês jogam juntos. Quem faltou numa noite recebe os resultados na próxima vez que entrar numa mesa com alguém que estava.
+
+## Straddle e Bomb pot
+
+Valem no Cash e nos torneios, e o anfitrião liga ou desliga em "Ajustes da mesa".
+- **Straddle**: toque no botão "Straddle" (canto direito da mesa). Quando você for o primeiro a falar, põe 2 BB às cegas; a ação começa depois de você e você fala por último no pré-flop. Precisa de pelo menos 3 jogadores.
+- **Bomb pot**: todos põem um valor (padrão 2 BB), sem blinds, e a mão começa direto no flop. Acontece a cada 10 mãos (ajustável; 0 = só manual) ou quando o anfitrião chama pelo menu (•••).
+
 ## Cash
 
-Blinds fixos, sem ante, recompra quando as fichas acabam.
+5.000 fichas iniciais, blinds fixos (100/200), sem ante, recompra quando as fichas acabam.
 
 ## Na mesa
 
 - **Ranking**: posição, jogador, fichas e BB de cada um, média da mesa; sua linha fica destacada.
 - **BB** no topo: mostra todos os valores em big blinds.
+- **Digitar o valor da aposta**: em "Aumentar", toque no número e digite (ex.: 1.350 ou 2k; em BB, 12,5). Abaixo do mínimo o botão trava e mostra o mínimo; acima do máximo vira all-in.
+- **All-in com porcentagem**: quando ninguém mais pode apostar, aparece "ALL-IN", as cartas de todos abrem e cada um vê a chance de vitória (%). A mesa vira uma rua de cada vez (flop, turn, river) e as porcentagens se atualizam a cada carta.
 - **Pré-ações**: fora da sua vez, marque "Passar/Desistir", "Passar" ou "Pagar qualquer"; quando a vez chega, o app joga sozinho.
 - **Banco de tempo**: quando os 30 s acabam, entra o banco (barra vermelha). Acabou o banco, o jogo passa/desiste por você e você fica **offline** — toque no balão no canto para voltar.
-- **Mostrar cartas**: quando todo mundo desiste, quem ganhou pode mostrar a mão.
-- **Reações** (botão 😄): emojis e frases aparecem em balão sobre o jogador.
+- **Mostrar cartas**: quando todo mundo desiste, quem ganhou pode tocar em "Mostrar minhas cartas".
+- **Revelação automática**: quando todos desistem, a mesa mostra a próxima rua que viria (fold no pré-flop → flop; no flop → turn; no turn → river). É só para ver; não muda o resultado.
+- **Reações e mensagens** (botão 😄): emojis, frases prontas ou uma mensagem digitada (até 60 letras) aparecem em balão sobre o jogador; as mensagens digitadas ficam no histórico.
 - **Sons e animações**: embaralhar, distribuir, fichas indo para o pote e para o vencedor. Dá para desligar o som no menu (•••).
 - **Resumo da noite** (menu): maior pote, melhor mão, mãos vencidas, torneios ganhos e reentradas — com botão "Mandar no grupo". Aparece para todos quando o anfitrião encerra a mesa.
 - **Estrutura de blinds** (menu): a tabela com o nível atual marcado.

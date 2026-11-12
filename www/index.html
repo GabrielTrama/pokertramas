@@ -32,9 +32,6 @@
   --green: #2EAD62;
   --blue: #2F80ED;
   --fire: linear-gradient(135deg, #FF9F1C 0%, #FF5A1F 45%, #D7261E 100%);
-  --felt-1: #23845C;
-  --felt-2: #136443;
-  --felt-3: #0A3B28;
   --display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
   --body: 'Figtree', system-ui, sans-serif;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -150,20 +147,24 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
 .banner { margin: 0 12px; padding: 8px 12px; border-radius: 10px; font-size: 14px; text-align: center; background: rgba(224,54,44,.15); color: #FF9A8E; }
 
 .table-wrap { flex: 1; position: relative; min-height: 0; }
-/* aro de cobre + feltro verde, oval em pé como no app da GG */
+/* aro de cobre + feltro roxo com borda neon, oval em pé */
 .rail {
   position: absolute; inset: 44px 22px 64px; border-radius: 50% / 34%;
   background: linear-gradient(160deg, #D9A391 0%, #9C6A5C 30%, #6E463C 55%, #B98272 80%, #7A5045 100%);
-  box-shadow: 0 0 0 2px #1A0F0C, 0 24px 60px rgba(0,0,0,.8), inset 0 1px 1px rgba(255,255,255,.35);
+  box-shadow: 0 0 0 2px #1A0F0C, 0 0 26px rgba(168,64,255,.35), 0 24px 60px rgba(0,0,0,.8), inset 0 1px 1px rgba(255,255,255,.35);
 }
 .felt {
   position: absolute; inset: 9px; border-radius: 50% / 34%;
   background:
-    radial-gradient(ellipse 70% 45% at 50% 42%, rgba(120,200,150,.16), transparent 70%),
-    repeating-radial-gradient(circle at 30% 20%, rgba(0,0,0,.03) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at 50% 45%, #2A7A4E 0%, #1B5E3A 45%, #103D26 85%, #0B2D1C 100%);
-  box-shadow: inset 0 0 0 2px rgba(0,0,0,.55), inset 0 0 40px rgba(0,0,0,.55);
+    radial-gradient(ellipse 70% 45% at 50% 42%, rgba(205,140,255,.16), transparent 70%),
+    repeating-radial-gradient(circle at 30% 20%, rgba(0,0,0,.035) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 45%, #7A34C4 0%, #6327A8 45%, #4A1A86 82%, #34106A 100%);
+  box-shadow: inset 0 0 0 2px #D59BFF, inset 0 0 6px 3px rgba(200,110,255,.9), inset 0 0 22px 6px rgba(160,60,255,.55), inset 0 0 60px rgba(20,0,40,.45);
 }
+/* pilhas de dinheiro nos cantos de cima da mesa */
+.cash { position: absolute; top: -30px; width: min(37%, 165px); aspect-ratio: 480 / 407; background: url(dinheiro.webp) center / contain no-repeat; pointer-events: none; filter: drop-shadow(0 8px 10px rgba(0,0,0,.6)); }
+.cash.l { left: -20px; transform: scaleX(-1); }
+.cash.r { right: -20px; }
 .felt::after { content: ''; position: absolute; inset: 9% 10%; border-radius: 50% / 34%; border: 1.5px solid rgba(255,255,255,.06); }
 .felt-logo {
   position: absolute; left: 50%; top: 31%; transform: translate(-50%, -50%);
@@ -175,9 +176,11 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
   position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%);
   width: min(82%, 440px); text-align: center; display: grid; gap: 10px; justify-items: center; z-index: 2;
 }
-.board { display: flex; gap: 5px; justify-content: center; min-height: 66px; }
+.board { display: flex; gap: 4px; justify-content: center; min-height: 61px; }
+.board .card { --w: 43px; }
 .pot { display: flex; align-items: center; gap: 8px; min-height: 30px; }
-.pot-pill { background: rgba(8,28,18,.62); border: 1px solid rgba(255,255,255,.07); border-radius: 999px; padding: 4px 22px; text-align: center; line-height: 1.15; }
+.pot-pill { background: rgba(26,6,48,.62); border: 1px solid rgba(255,255,255,.07); border-radius: 999px; padding: 4px 22px; text-align: center; line-height: 1.15; }
+.pot-pill.bomb { border-color: rgba(255,120,40,.6); box-shadow: 0 0 18px rgba(255,100,30,.35); }
 .pot-pill small { display: block; font-size: 12px; color: rgba(255,255,255,.75); }
 .pot-pill b { font: 800 19px var(--display); color: #FFD54F; letter-spacing: .02em; }
 .pill { background: rgba(5,8,10,.72); border: 1px solid rgba(255,255,255,.08); border-radius: 999px; padding: 3px 10px; font: 700 15px/1.2 var(--display); letter-spacing: .02em; color: #fff; white-space: nowrap; }
@@ -229,7 +232,7 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
 .card.win { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 16px rgba(255,215,114,.75); transform: translateY(-4px); }
 .card.deal { animation: flipin .35s ease-out both; }
 @keyframes flipin { from { transform: rotateY(90deg) translateY(-10px); opacity: .2; } }
-.slot { width: 46px; height: 65px; border-radius: 6px; border: 1px dashed rgba(255,255,255,.12); }
+.slot { width: 43px; height: 61px; border-radius: 6px; border: 1px dashed rgba(255,255,255,.12); }
 
 /* Fichas */
 .chip {
@@ -247,7 +250,7 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
 .chips { display: flex; gap: 2px; align-items: flex-end; }
 
 /* Lugares (estilo GG: cartas por cima do avatar, placa escura embaixo) */
-.seat { position: absolute; transform: translate(-50%, -50%); width: 100px; display: grid; justify-items: center; z-index: 3; }
+.seat { position: absolute; transform: translate(-50%, -50%); width: 88px; display: grid; justify-items: center; z-index: 3; }
 .seat.out .ava, .seat.out .plate, .seat.out .holes { opacity: .5; }
 .seat .ava { z-index: 1; }
 .seat .holes { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); display: flex; z-index: 2; }
@@ -294,9 +297,74 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
   box-shadow: 0 2px 4px rgba(0,0,0,.6), inset 0 0 0 2px #B88A00;
 }
 .bet { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 4px; z-index: 4; pointer-events: none; }
-.bet .pill { font-size: 13px; padding: 1px 8px; background: rgba(8,28,18,.75); }
+.bet .pill { font-size: 13px; padding: 1px 8px; background: rgba(26,6,48,.75); }
 .bet.in { animation: betin .35s ease-out .25s both; }
 @keyframes betin { from { opacity: 0; transform: translate(-50%, -50%) scale(.6); } }
+
+.show-box { display: flex; align-items: center; gap: 10px; background: rgba(6,10,8,.72); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 6px 10px; }
+.show-box > span { font-size: 13px; color: rgba(255,255,255,.8); font-weight: 600; }
+.show-opts { display: flex; align-items: center; gap: 6px; }
+.show-opts .card { --w: 30px; }
+.show-card { border: 0; padding: 0; background: none; border-radius: 6px; transition: transform .12s; }
+.show-card .card { --w: 34px; box-shadow: 0 0 0 2px rgba(255,215,114,.0), 0 3px 8px rgba(0,0,0,.5); }
+.show-card:hover .card, .show-card:focus-visible .card { box-shadow: 0 0 0 2px var(--gold-hi), 0 3px 8px rgba(0,0,0,.5); }
+.show-card:active { transform: scale(.94); }
+.card.rabbit { opacity: .62; filter: saturate(.55); box-shadow: 0 0 0 1.5px rgba(255,255,255,.55), 0 3px 8px rgba(0,0,0,.4); }
+.card.rabbit.deal { animation: rabbitin .45s ease-out both; }
+@keyframes rabbitin { from { transform: rotateY(90deg) translateY(-10px); opacity: 0; } to { opacity: .62; } }
+.card.showed::after { content: '👁'; position: absolute; top: 3px; right: 3px; font-size: 11px; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+
+/* ---------- All-in ---------- */
+.eq {
+  position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 5;
+  min-width: 72px; padding: 3px 12px 7px; border-radius: 10px; overflow: hidden; text-align: center;
+  background: linear-gradient(180deg, rgba(20,24,32,.95), rgba(6,8,12,.95));
+  border: 1px solid rgba(255,255,255,.16); box-shadow: 0 6px 16px rgba(0,0,0,.55);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.eq .eqn { font: 800 19px/1.1 var(--display); color: #fff; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+.eq i { position: absolute; left: 0; bottom: 0; height: 3px; width: var(--to); border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, #00E5FF, #7C4DFF); box-shadow: 0 0 8px rgba(0,229,255,.8); }
+.eq.pop { animation: eqpop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.eq.pop i { animation: eqbar .9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes eqpop { from { transform: translateX(-50%) scale(.75); opacity: .3; } }
+@keyframes eqbar { from { width: var(--from); } }
+.eq.lead { border-color: rgba(0,229,255,.75); box-shadow: 0 0 0 1px rgba(0,229,255,.3), 0 0 20px rgba(0,229,255,.45), 0 6px 16px rgba(0,0,0,.55); }
+.eq.lead .eqn { color: #8AF8FF; text-shadow: 0 0 12px rgba(0,229,255,.75); }
+.eq.win { border-color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(255,215,114,.4), 0 0 24px rgba(255,215,114,.6); }
+.eq.win .eqn { color: var(--gold-hi); text-shadow: 0 0 12px rgba(255,215,114,.7); }
+.eq.win i { background: linear-gradient(90deg, #FFD772, #FF9F1C); box-shadow: 0 0 8px rgba(255,190,80,.9); }
+.eq.dead { opacity: .65; } .eq.dead .eqn { color: #8B95A1; text-decoration: line-through; text-decoration-thickness: 2px; }
+.table-wrap.allin .rail { animation: railpulse 1.6s ease-in-out infinite; }
+@keyframes railpulse { 50% { box-shadow: 0 0 0 2px #1A0F0C, 0 0 34px rgba(255,90,31,.6), 0 24px 60px rgba(0,0,0,.8), inset 0 1px 1px rgba(255,255,255,.35); } }
+.allin-banner {
+  position: absolute; left: 50%; top: 40%; z-index: 9; pointer-events: none; transform: translate(-50%, -50%);
+  animation: allinIn 2.6s cubic-bezier(.2,.9,.3,1) both;
+}
+.allin-banner::before {
+  content: ''; position: absolute; inset: -40px -70px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(255,110,30,.55), rgba(255,60,20,.15) 60%, transparent);
+  animation: flare 2.6s ease-out both;
+}
+.allin-banner.with-icon { display: flex; align-items: center; gap: 4px; }
+.allin-banner > i { font-style: normal; font-size: clamp(34px, 11vw, 60px); line-height: 1; filter: drop-shadow(0 4px 14px rgba(255,90,31,.7)); }
+.allin-banner.with-icon span { font-size: clamp(44px, 14vw, 78px); }
+.allin-banner span {
+  display: block; font: 800 clamp(54px, 18vw, 86px)/1 var(--display); letter-spacing: .05em; font-style: italic; white-space: nowrap;
+  padding: 0 .18em 0 .08em;
+  background: linear-gradient(100deg, #FFD772 0%, #FF7A1A 30%, #FFFFFF 48%, #FF7A1A 66%, #D7261E 100%);
+  background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 16px rgba(255,90,31,.7)); animation: shine 1.3s .25s linear both;
+}
+@keyframes allinIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(2.4) skewX(-8deg); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(.94) skewX(-8deg); }
+  24% { transform: translate(-50%, -50%) scale(1.04) skewX(-8deg); }
+  32%, 84% { opacity: 1; transform: translate(-50%, -50%) scale(1) skewX(-8deg); }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(.96) skewX(-8deg); }
+}
+@keyframes flare { 0% { opacity: 0; transform: scale(.4); } 20% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
 
 #fx { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: visible; }
 .fly { position: absolute; left: 0; top: 0; will-change: transform; }
@@ -306,11 +374,50 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
   animation: bub 2.8s ease both;
 }
 .bubble.emoji { font-size: 30px; padding: 2px 8px; line-height: 1.2; }
+.bubble:not(.emoji) { white-space: normal; max-width: 180px; text-align: center; overflow-wrap: anywhere; line-height: 1.25; }
+.chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 14px; }
+.chat .btn { min-height: 48px; }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: #fff; }
 @keyframes bub { 0% { opacity: 0; transform: translate(-50%, -80%) scale(.5); } 10% { opacity: 1; transform: translate(-50%, -100%) scale(1.08); } 16% { transform: translate(-50%, -100%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -125%); } }
 
 /* ---------- Minha área (só os botões, como no GG) ---------- */
 .me { padding: 4px 12px calc(12px + var(--safe-b)); display: grid; gap: 8px; position: relative; z-index: 5; }
+.straddle-btn { position: absolute; right: 12px; bottom: calc(100% + 10px); z-index: 7; border: 1px solid var(--line); border-radius: 12px; padding: 5px 10px; min-height: 44px;
+  background: rgba(30,31,35,.92); color: var(--muted); font-weight: 700; font-size: 13px; line-height: 1.1; box-shadow: 0 6px 14px rgba(0,0,0,.4); }
+.straddle-btn small { display: block; font-size: 10px; font-weight: 600; }
+.straddle-btn[aria-pressed=true] { background: linear-gradient(180deg, #FF9F1C, #E2661B); color: #fff; border-color: #FFB45A; }
+.seg3 { grid-template-columns: repeat(3, 1fr); }
+.seg3 button { padding: 8px 4px; font-size: 14px; }
+.spin-opts { background: rgba(242,179,61,.07); border: 1px solid rgba(242,179,61,.35); border-radius: 12px; padding: 10px 10px 2px; margin-bottom: 12px; }
+.spin-opts p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.season-link { margin-top: 18px; background: transparent; }
+.month-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
+.month-nav b { font-size: 16px; }
+.rank.season td:nth-child(2) { white-space: normal; }
+.rank.season small { display: block; font-size: 12px; margin-top: 2px; }
+.rank .wins { font: 800 22px var(--display); color: var(--gold-hi); }
+.sub { font-size: 14px; color: var(--muted); font-weight: 600; margin: 16px 0 6px; }
+.last-t { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.last-t li { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.last-t span:first-child, .last-t small { color: var(--muted); }
+.empty-s { color: var(--muted); background: rgba(255,255,255,.04); border-radius: 12px; padding: 14px; }
+/* Roleta do Spin & Gold */
+#spinReveal { position: fixed; inset: 0; z-index: 55; display: grid; place-items: center; background: radial-gradient(70% 50% at 50% 45%, rgba(60,20,6,.97), rgba(5,5,7,.99));
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.reel-box { text-align: center; }
+.reel-title { font: 800 30px/1 var(--display); letter-spacing: .06em; color: var(--gold-hi); margin-bottom: 18px; }
+.reel { position: relative; width: 240px; height: 120px; margin: 0 auto; overflow: hidden; border-radius: 18px;
+  background: linear-gradient(180deg, #0B0C0F, #1C1E24 50%, #0B0C0F); box-shadow: 0 0 0 3px #C9A45C, 0 0 0 6px #2A1A0A, 0 0 40px rgba(255,140,30,.35), inset 0 0 24px rgba(0,0,0,.8); }
+.reel::before, .reel::after { content: ''; position: absolute; left: 0; right: 0; height: 34px; z-index: 2; pointer-events: none; }
+.reel::before { top: 0; background: linear-gradient(#0B0C0F, transparent); }
+.reel::after { bottom: 0; background: linear-gradient(transparent, #0B0C0F); }
+.reel-strip { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+.reel-strip div { height: 120px; display: grid; place-items: center; font: 800 72px/1 var(--display); color: #fff; letter-spacing: .02em; }
+.reel-strip div.big { color: #FFD772; text-shadow: 0 0 18px rgba(255,190,60,.8); }
+.reel-result { margin-top: 18px; min-height: 60px; font-size: 16px; color: var(--muted); }
+.reel-result b { display: block; font: 800 40px/1.1 var(--display); color: #FFD772; text-shadow: 0 0 22px rgba(255,180,40,.7); animation: eqpop .6s cubic-bezier(.2,1.4,.4,1) both; }
+.reel.win { animation: reelwin 1s ease-in-out infinite; }
+@keyframes reelwin { 50% { box-shadow: 0 0 0 3px #FFD772, 0 0 0 6px #2A1A0A, 0 0 70px rgba(255,190,60,.8), inset 0 0 24px rgba(0,0,0,.8); } }
 .react-btn { position: absolute; left: 12px; bottom: calc(100% + 10px); width: 44px; height: 44px; border-radius: 50%; border: 0; font-size: 22px; background: rgba(30,31,35,.92); box-shadow: inset 0 0 0 1px var(--line), 0 6px 14px rgba(0,0,0,.4); z-index: 7; }
 .me-info { display: flex; justify-content: center; gap: 12px; font-size: 13px; color: var(--muted); min-height: 18px; }
 .me-info #myHand { color: var(--gold-hi); font-weight: 700; }
@@ -326,9 +433,24 @@ details.settings summary { cursor: pointer; padding: 6px 0; }
 .pre button::before { content: ''; width: 18px; height: 18px; border-radius: 3px; border: 2px solid #8A8B90; flex: none; background: #1A1B1E; }
 .pre button[aria-pressed=true]::before { background: #FFD54F; border-color: #FFD54F; box-shadow: inset 0 0 0 3px #1A1B1E; }
 .pre button[aria-pressed=true] { color: #fff; }
-.raise-panel { background: #1E1F23; border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
-.raise-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: 14px; }
-.raise-amt { font: 800 30px/1 var(--display); color: #FFD54F; }
+.raise-panel {
+  position: absolute; left: 12px; right: 12px; bottom: calc(100% + 4px); z-index: 8;
+  background: rgba(26,27,31,.97); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 12px; display: grid; gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  box-shadow: 0 -12px 34px rgba(0,0,0,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: panelup .2s ease-out both;
+}
+@keyframes panelup { from { transform: translateY(14px); opacity: 0; } }
+.raise-cards { display: flex; gap: 2px; flex: none; }
+.raise-cards .card { --w: 28px; }
+.raise-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.raise-head label { color: var(--muted); font-size: 13px; line-height: 1.2; flex: 1; min-width: 0; }
+.raise-box { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 0 1 auto; background: #121316; border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px; }
+.raise-box:focus-within { border-color: #FFD54F; }
+.raise-input { width: 4.6em; min-width: 0; background: none; border: 0; outline: none; text-align: right; font: 800 28px/1.15 var(--display); color: #FFD54F; padding: 0; }
+#raiseUnit { color: var(--muted); font-size: 13px; }
+.raise-hint { font-size: 12px; color: var(--muted); margin-top: -4px; text-align: right; }
+.raise-hint.bad { color: #FF8A7A; font-weight: 600; }
 .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
 .waiting-note { text-align: center; color: var(--muted); font-size: 14px; min-height: 58px; display: grid; place-items: center; }
@@ -388,6 +510,8 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
 .pod.p2 .block { height: 70px; background: linear-gradient(180deg, #E3E7EC, #8D96A0); color: #24292F; }
 .pod.p3 .block { height: 52px; background: linear-gradient(180deg, #E7A46B, #8E4E1E); }
 .pod.p1 .ava { width: 74px; height: 74px; font-size: 34px; box-shadow: 0 0 0 3px #0E1013, 0 0 0 5px var(--gold-hi), 0 0 30px rgba(255,215,114,.6); }
+.spin-prize { text-align: center; margin: 6px 0 10px; color: var(--muted); }
+.spin-prize b { font: 800 28px var(--display); color: #FFD772; margin-left: 6px; text-shadow: 0 0 14px rgba(255,180,40,.6); }
 .sum-card { background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
 .sum-card h3 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 600; }
 .rec { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 6px 0; }
@@ -465,13 +589,21 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
 
     <div class="or">ou crie uma mesa com esse ID e senha</div>
 
-    <div class="seg" role="group" aria-label="Modo de jogo">
-      <button id="modeT" aria-pressed="true">Torneio<small>blinds sobem, reentrada</small></button>
-      <button id="modeC" aria-pressed="false">Cash<small>blinds fixos, recompra</small></button>
+    <div class="seg seg3" role="group" aria-label="Modo de jogo">
+      <button id="modeT" aria-pressed="true">Torneio<small>reentrada</small></button>
+      <button id="modeS" aria-pressed="false">Spin &amp; Gold<small>prêmio sorteado</small></button>
+      <button id="modeC" aria-pressed="false">Cash<small>recompra</small></button>
+    </div>
+    <div class="spin-opts" id="spinOpts" hidden>
+      <p>500 fichas, blinds 10/20 subindo a cada 3 min, sem reentrada. O prêmio do campeão é sorteado antes da 1ª mão.</p>
+      <div class="seg" role="group" aria-label="Multiplicadores do sorteio">
+        <button id="presetA" aria-pressed="true">Entre amigos<small>×2, ×3, ×5, ×10</small></button>
+        <button id="presetG" aria-pressed="false">Clássico GG<small>×2 até ×1000</small></button>
+      </div>
     </div>
     <details class="settings">
-      <summary>Fichas e blinds</summary>
-      <div class="grid2">
+      <summary>Ajustes da mesa</summary>
+      <div class="grid2" id="stackFields">
         <label class="field"><span>Fichas iniciais</span><input id="setStack" class="input" type="number" inputmode="numeric" value="20000"></label>
         <label class="field" id="levelField"><span>Minutos por nível</span><input id="setLevel" class="input" type="number" inputmode="numeric" value="8"></label>
         <label class="field"><span>Small blind</span><input id="setSB" class="input" type="number" inputmode="numeric" value="100"></label>
@@ -480,9 +612,17 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
       </div>
       <p id="structHint" style="margin:8px 0 0;font-size:12px">Blinds começam em 100/200 (ante 30) e sobem pela tabela: 8 min por nível até 400/800, depois 5 min. Reentrada 0 = sem reentrada.</p>
       <label class="check" id="rebuyField" hidden><input id="setRebuy" type="checkbox" checked> Permitir recompra quando zerar</label>
+      <label class="check"><input id="setStraddle" type="checkbox" checked> Straddle (o 1º a falar pode pôr 2 BB às cegas)</label>
+      <label class="check"><input id="setBomb" type="checkbox" checked> Bomb pot (todos põem e a mão começa no flop)</label>
+      <div class="grid2" id="bombFields">
+        <label class="field"><span>Bomb pot a cada (mãos)</span><input id="setBombEvery" class="input" type="number" inputmode="numeric" value="10"></label>
+        <label class="field"><span>Valor do bomb pot (BB)</span><input id="setBombBB" class="input" type="number" inputmode="numeric" value="2"></label>
+      </div>
+      <p style="margin:6px 0 0;font-size:12px">Bomb pot a cada 0 mãos = só quando o anfitrião chamar pelo menu.</p>
     </details>
     <button id="createBtn" class="btn btn-fire btn-wide">Criar mesa</button>
     <p class="lobby-err" id="lobbyErr" role="alert"></p>
+    <button id="seasonLobbyBtn" class="btn btn-wide season-link">🏆 Ranking da temporada</button>
   </div>
 </main>
 
@@ -499,13 +639,16 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
   <div class="banner" id="banner" hidden></div>
 
   <div class="table-wrap" id="tableWrap">
-    <div class="rail"><div class="felt"><div class="felt-logo" role="img" aria-label="PokerTrama"></div></div></div>
+    <div class="rail"><div class="felt"><div class="felt-logo" role="img" aria-label="PokerTrama"></div></div><i class="cash l"></i><i class="cash r"></i></div>
     <div id="seats"></div>
     <div class="center">
       <div class="pot" id="pot"></div>
       <div class="board" id="board"></div>
       <div class="msg" id="centerMsg"></div>
-      <button id="showBtn" class="btn btn-small btn-light" hidden>Mostrar minhas cartas</button>
+      <div class="show-box" id="showBox" hidden>
+        <span>Mostrar</span>
+        <div class="show-opts" id="showOpts"></div>
+      </div>
       <button id="startBtn" class="btn btn-fire" hidden>Começar o jogo</button>
     </div>
     <div id="fx"></div>
@@ -513,9 +656,15 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
 
   <section class="me">
     <button class="react-btn" id="reactBtn" aria-label="Reações">😄</button>
+    <button class="straddle-btn" id="straddleBtn" aria-pressed="false" hidden>Straddle<small>2 BB</small></button>
     <div class="me-info" hidden><span id="myHand"></span></div>
     <div id="raisePanel" class="raise-panel" hidden>
-      <div class="raise-head"><span id="raiseLabel">Aumentar para</span><span class="raise-amt" id="raiseAmt">0</span></div>
+      <div class="raise-head">
+        <div class="raise-cards" id="raiseCards"></div>
+        <label for="raiseInput" id="raiseLabel">Aumentar para</label>
+        <div class="raise-box"><input id="raiseInput" class="raise-input" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="send" aria-describedby="raiseHint"><span id="raiseUnit">fichas</span></div>
+      </div>
+      <div class="raise-hint" id="raiseHint"></div>
       <input id="raiseRange" type="range" aria-label="Valor do aumento">
       <div class="presets">
         <button class="btn btn-small" data-preset="min">Mín</button>
@@ -546,6 +695,11 @@ input[type=range] { width: 100%; accent-color: #FFB300; height: 32px; }
   <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 </div>
 <div id="summary" hidden></div>
+<div id="spinReveal" hidden><div class="reel-box">
+  <div class="reel-title">SPIN &amp; GOLD</div>
+  <div class="reel" id="reel"><div class="reel-strip" id="reelStrip"></div></div>
+  <div class="reel-result" id="reelResult">Sorteando o prêmio…</div>
+</div></div>
 <div id="toast" hidden role="status"></div>
 
 <script>
@@ -659,6 +813,11 @@ const Sfx = {
   check(when = 0) { this.tone(160, 0.09, { gain: 0.35, when, slideTo: 80 }); this.tone(160, 0.09, { gain: 0.3, when: when + 0.12, slideTo: 80 }); },
   fold(when = 0) { this.noise(0.14, { type: 'lowpass', freq: 1400, gain: 0.18, when }); },
   turn() { this.tone(880, 0.14, { gain: 0.12 }); this.tone(1320, 0.22, { gain: 0.12, when: 0.13 }); },
+  allin() {
+    this.tone(90, 0.6, { gain: 0.45, slideTo: 38 });
+    this.noise(0.5, { type: 'lowpass', freq: 500, gain: 0.25 });
+    [440, 554, 659].forEach((f, i) => this.tone(f, 0.18, { type: 'sawtooth', gain: 0.035, when: 0.1 + i * 0.07 }));
+  },
   win() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.25, { type: 'triangle', gain: 0.13, when: i * 0.1 })); this.chips(0.2); },
   pop() { this.tone(520, 0.08, { slideTo: 900, gain: 0.08 }); },
 };
@@ -704,6 +863,7 @@ const Host = {
       if (!msg || typeof msg !== 'object') return;
       if (!pid) {
         if (msg.t !== 'hello') return;
+        if (Array.isArray(msg.season)) Season.merge(msg.season);
         if (String(msg.pw || '') !== tablePw) { conn.send({ t: 'err', fatal: true, msg: 'Senha errada' }); setTimeout(() => conn.close(), 400); return; }
         if (!msg.pid || msg.pid === myId) { conn.close(); return; }
         const p = String(msg.pid);
@@ -722,6 +882,7 @@ const Host = {
         if (old && old !== conn) { try { old.close(); } catch {} }
         this.lastSeen.set(pid, performance.now());
         this.broadcastAvatars();
+        this.broadcastSeason();
         this.changed();
         return;
       }
@@ -741,20 +902,29 @@ const Host = {
     if (i >= 0 && !state.seats[i].sitOut) { E.setSitOut(state, pid, true); this.changed(); }
   },
 
+  broadcastSeason() {
+    const entries = Season.recent();
+    for (const c of this.conns.values()) { try { c.send({ t: 'season', entries }); } catch {} }
+  },
+
   broadcastAvatars() {
     for (const c of this.conns.values()) { try { c.send({ t: 'avatars', map: avatars }); } catch {} }
   },
 
-  react(pid, text) {
-    const t = String(text || '');
-    if (!REACTIONS.has(t)) return 'Reação inválida';
+  react(pid, text, custom) {
+    let t = String(text || '');
+    if (custom) {
+      t = t.replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!t) return 'Escreva uma mensagem';
+    } else if (!REACTIONS.has(t)) return 'Reação inválida';
     const seat = E.seatOf(state, pid);
-    if (seat < 0) return 'Só quem está na mesa pode reagir';
+    if (seat < 0) return 'Só quem está na mesa pode mandar mensagem';
     const last = this.lastReact.get(pid) || 0;
-    if (Date.now() - last < 1200) return null;
+    if (Date.now() - last < 1200) return 'Espere um pouco para mandar outra';
     this.lastReact.set(pid, Date.now());
     for (const c of this.conns.values()) { try { c.send({ t: 'react', seat, text: t }); } catch {} }
     showReaction(seat, t);
+    if (custom) { state.log.push(`💬 ${state.seats[seat].name}: ${t}`); if (state.log.length > 50) state.log.shift(); this.changed(); }
     return null;
   },
 
@@ -765,12 +935,18 @@ const Host = {
         case 'act':
           if (d.handNumber !== undefined && d.handNumber !== state.handNumber) throw new E.GameError('Essa mão já terminou');
           E.act(state, this.ctx, pid, String(d.action), d.amount, Date.now()); break;
+        case 'straddle': E.setStraddle(state, pid, !!d.value); break;
+        case 'bomb':
+          if (!isHost) throw new E.GameError('Só o anfitrião pode chamar bomb pot');
+          E.callBomb(state, d.value !== false); break;
         case 'start':
           if (!isHost) throw new E.GameError('Só o anfitrião pode começar');
           if (state.phase !== 'waiting') throw new E.GameError('O jogo já começou');
-          this.ctx = E.startHand(state, Date.now()); break;
-        case 'show': E.showCards(state, this.ctx, pid); break;
-        case 'react': return this.react(pid, d.text);
+          if (E.isSpin(state)) E.drawSpin(state, Date.now());
+          else this.ctx = E.startHand(state, Date.now());
+          break;
+        case 'show': E.showCards(state, this.ctx, pid, d.which === 0 || d.which === 1 ? d.which : 'both'); break;
+        case 'react': return this.react(pid, d.text, !!d.custom);
         case 'rebuy': E.rebuy(state, pid); break;
         case 'reenter': E.reenter(state, pid, Date.now()); break;
         case 'noreenter': E.declineReentry(state, pid, Date.now()); break;
@@ -831,6 +1007,10 @@ const Host = {
   },
 
   changed() {
+    if (state.tourney && state.tourney.result && Season.merge([state.tourney.result])) this.broadcastSeason();
+    if (state.runout && !state.runout.equity && E.handActive(state)) {
+      try { state.runout.equity = E.equity(state, this.ctx, 3000); } catch (e) { console.error(e); }
+    }
     state.updatedAt = Date.now();
     lsSet('pt.host', JSON.stringify({ id: tableId, pw: tablePw, state, ctx: this.ctx, at: Date.now() }));
     const t = Date.now();
@@ -897,7 +1077,7 @@ const Client = {
     if (this.conn) { try { this.conn.close(); } catch {} }
     const c = this.peer.connect(PEER_PREFIX + tableId, { reliable: true, serialization: 'json' });
     this.conn = c;
-    c.on('open', () => c.send({ t: 'hello', pid: myId, name: this.name, pw: tablePw, color: myColor, photo: myPhoto, v: 2 }));
+    c.on('open', () => c.send({ t: 'hello', pid: myId, name: this.name, pw: tablePw, color: myColor, photo: myPhoto, season: Season.recent(), v: 3 }));
     c.on('data', (m) => this.onMsg(m));
     c.on('close', () => { if (this.conn === c && mode === 'client') this.reconnectSoon(); });
     c.on('error', () => {});
@@ -912,6 +1092,7 @@ const Client = {
     }
     if (m.t === 'state') {
       state = m.state; myHand = m.hand;
+      if (state.tourney && state.tourney.result) Season.merge([state.tourney.result]);
       pendingUntil = 0;
       if (!this.joined) {
         this.joined = true; mode = 'client';
@@ -920,6 +1101,8 @@ const Client = {
       }
       setBanner('');
       render();
+    } else if (m.t === 'season') {
+      if (Season.merge(m.entries) && seasonOpen) openSeason(seasonMonth);
     } else if (m.t === 'avatars') {
       avatars = m.map || {}; render();
     } else if (m.t === 'react') {
@@ -979,6 +1162,84 @@ function send(op, data = {}) {
   if (mode === 'host') { const err = Host.run(myId, op, data); if (err) toast(err); }
   else if (mode === 'client') { if (op !== 'react') pendingUntil = Date.now() + 3000; Client.send(op, data); render(); }
 }
+
+/* ==================================================================
+   RANKING DA TEMPORADA
+   Cada torneio terminado vira um resultado com id único. Todo celular guarda
+   os resultados e troca com a mesa ao entrar, então a lista de todos converge.
+   Pontuação: 1 ponto por torneio vencido (Spin & Gold também vale 1).
+   ================================================================== */
+const Season = {
+  KEY: 'pt.season',
+  all() { const v = lsJSON(this.KEY); return Array.isArray(v) ? v : []; },
+  clean(e) {
+    if (!e || typeof e.id !== 'string' || e.id.length > 80 || !Number.isFinite(e.at)) return null;
+    if (!['torneio', 'spin'].includes(e.mode) || !Array.isArray(e.players) || e.players.length < 2 || e.players.length > 9) return null;
+    const players = e.players.map((p) => ({ pid: String(p.pid || '').slice(0, 40), name: String(p.name || '?').slice(0, 16), place: Math.floor(+p.place) }))
+      .filter((p) => p.pid && p.place >= 1 && p.place <= 9);
+    if (players.length !== e.players.length || !players.some((p) => p.place === 1)) return null;
+    return { id: e.id, at: e.at, mode: e.mode, mult: Math.max(0, Math.min(1000, Math.floor(+e.mult || 0))), code: String(e.code || '').slice(0, 20), players };
+  },
+  merge(entries) {
+    if (!Array.isArray(entries) || !entries.length) return false;
+    const list = this.all(); const ids = new Set(list.map((e) => e.id)); let added = 0;
+    for (const raw of entries) { const e = this.clean(raw); if (e && !ids.has(e.id)) { list.push(e); ids.add(e.id); added++; } }
+    if (added) { list.sort((a, b) => a.at - b.at); lsSet(this.KEY, JSON.stringify(list.slice(-600))); }
+    return added > 0;
+  },
+  monthKey(t) { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; },
+  recent() {
+    const d = new Date(); const from = new Date(d.getFullYear(), d.getMonth() - 1, 1).getTime();
+    return this.all().filter((e) => e.at >= from);
+  },
+  month(key) { return this.all().filter((e) => this.monthKey(e.at) === key); },
+  ranking(key) {
+    const list = this.month(key); const map = new Map();
+    for (const e of list) for (const p of e.players) {
+      const r = map.get(p.pid) || { pid: p.pid, name: p.name, wins: 0, played: 0, bestSpin: 0, lastAt: 0 };
+      r.played++;
+      if (p.place === 1) { r.wins++; if (e.mode === 'spin') r.bestSpin = Math.max(r.bestSpin, e.mult); }
+      if (e.at >= r.lastAt) { r.name = p.name; r.lastAt = e.at; }
+      map.set(p.pid, r);
+    }
+    return { list, rows: [...map.values()].sort((a, b) => b.wins - a.wins || b.bestSpin - a.bestSpin || a.played - b.played || a.name.localeCompare(b.name)) };
+  },
+};
+const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const monthName = (key, cap) => { const [y, m] = key.split('-').map(Number); const n = MONTHS[m - 1]; return `${cap ? n[0].toUpperCase() + n.slice(1) : n} de ${y}`; };
+const shiftMonth = (key, k) => { const [y, m] = key.split('-').map(Number); return Season.monthKey(new Date(y, m - 1 + k, 1).getTime()); };
+let seasonOpen = false, seasonMonth = Season.monthKey(Date.now());
+
+function openSeason(key = Season.monthKey(Date.now())) {
+  seasonMonth = key; seasonOpen = true;
+  const { list, rows } = Season.ranking(key);
+  const isNow = key === Season.monthKey(Date.now());
+  const medal = (k) => ['🥇', '🥈', '🥉'][k] || `${k + 1}º`;
+  const last = list.slice(-8).reverse().map((e) => {
+    const w = e.players.find((p) => p.place === 1);
+    const d = new Date(e.at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return `<li><span>${d}</span><span>${e.mode === 'spin' ? `🎰 Spin ×${e.mult}` : '🏆 Torneio'}</span><b>${esc(w ? w.name : '?')}</b><small>${e.players.length} jog.</small></li>`;
+  }).join('');
+  openSheet(`<h2>Ranking da temporada</h2>
+    <div class="month-nav"><button class="btn btn-small" id="mPrev" aria-label="Mês anterior">◀</button><b>${esc(monthName(key, true))}</b>
+      <button class="btn btn-small" id="mNext" aria-label="Próximo mês" ${isNow ? 'disabled' : ''}>▶</button></div>
+    ${rows.length ? `<table class="rank season"><tr><th>Posição</th><th>Jogador</th><th>Vitórias</th></tr>
+      ${rows.map((r, k) => `<tr class="${r.pid === myId ? 'is-me' : ''}"><td>${medal(k)}</td><td><div class="who"><span>${esc(r.name)}</span></div>
+        <small>${r.played} torneio${r.played > 1 ? 's' : ''}${r.bestSpin ? ` · melhor Spin ×${r.bestSpin}` : ''}</small></td><td><b class="wins">${r.wins}</b></td></tr>`).join('')}
+      </table>
+      <h3 class="sub">Últimos torneios</h3><ul class="last-t">${last}</ul>
+      <button class="btn btn-fire btn-wide" id="seasonShare" style="margin-top:12px">Mandar no grupo</button>`
+    : `<p class="empty-s">Nenhum torneio terminado em ${esc(monthName(key))} ainda. Cada torneio vencido vale 1 ponto, e o Spin &amp; Gold também conta.</p>`}
+    <p style="color:var(--muted);font-size:12px;margin:12px 0 0">O ranking junta os torneios dos celulares de todos da turma: ele se atualiza quando vocês entram numa mesa juntos.</p>`);
+  $('mPrev').onclick = () => openSeason(shiftMonth(key, -1));
+  $('mNext').onclick = () => openSeason(shiftMonth(key, 1));
+  if ($('seasonShare')) $('seasonShare').onclick = () => {
+    const L = [`🏆 PokerTrama — Ranking de ${monthName(key)}`];
+    rows.forEach((r, k) => L.push(`${medal(k)} ${r.name}: ${r.wins} vitória${r.wins === 1 ? '' : 's'} (${r.played} torneio${r.played > 1 ? 's' : ''})${r.bestSpin ? ` · Spin ×${r.bestSpin}` : ''}`));
+    shareText(L.join('\n'));
+  };
+}
+$('seasonLobbyBtn').onclick = () => openSeason();
 
 /* ---------- Compartilhar (APK usa o plugin nativo) ---------- */
 const NativeShare = window.Capacitor && window.Capacitor.registerPlugin ? window.Capacitor.registerPlugin('Share') : null;
@@ -1043,11 +1304,26 @@ $('nameInput').addEventListener('input', () => { if (!myPhoto) $('myAva').textCo
 
 /* ---------- Lobby ---------- */
 let createMode = 'torneio';
+let spinPreset = 'amigos';
+function setSpinPreset(p) {
+  spinPreset = p;
+  $('presetA').setAttribute('aria-pressed', p === 'amigos'); $('presetG').setAttribute('aria-pressed', p === 'gg');
+}
+$('presetA').onclick = () => setSpinPreset('amigos');
+$('presetG').onclick = () => setSpinPreset('gg');
+$('setBomb').onchange = () => { $('bombFields').hidden = !$('setBomb').checked; };
+$('modeS').onclick = () => setCreateMode('spin');
 function setCreateMode(m) {
   createMode = m;
   $('modeT').setAttribute('aria-pressed', m === 'torneio'); $('modeC').setAttribute('aria-pressed', m === 'cash');
+  $('modeS').setAttribute('aria-pressed', m === 'spin');
+  $('spinOpts').hidden = m !== 'spin';
+  $('stackFields').hidden = m === 'spin';
   $('levelField').hidden = m !== 'torneio'; $('reentryField').hidden = m !== 'torneio'; $('structHint').hidden = m !== 'torneio';
   $('rebuyField').hidden = m !== 'cash';
+  if (m === 'spin') return;
+  const st = $('setStack'), def = { torneio: E.DEFAULT_SETTINGS.startingStack, cash: E.DEFAULT_SETTINGS.cashStack };
+  if (!st.value || +st.value === def.torneio || +st.value === def.cash) st.value = def[m];
 }
 $('modeT').onclick = () => setCreateMode('torneio');
 $('modeC').onclick = () => setCreateMode('cash');
@@ -1099,6 +1375,8 @@ $('createBtn').onclick = async () => {
   const settings = {
     mode: createMode, startingStack: +$('setStack').value, smallBlind: +$('setSB').value, bigBlind: +$('setBB').value,
     levelMinutes: +$('setLevel').value, reentryLevels: +$('setReentry').value, allowRebuy: $('setRebuy').checked, turnSeconds: 30, timeBankSeconds: 60,
+    spinPreset, allowStraddle: $('setStraddle').checked,
+    bomb: { on: $('setBomb').checked, every: +$('setBombEvery').value, bb: +$('setBombBB').value },
   };
   try {
     await Host.open(f.id, f.pw, f.name, settings, null);
@@ -1209,7 +1487,7 @@ setUnit(unitBB);
 
 function seatPos(j, n, wrap) {
   const ang = (90 + j * 360 / n) * Math.PI / 180;
-  const rx = 50 - (wrap.clientWidth < 500 ? 12 : 11);
+  const rx = 50 - 11;
   const ry = 50 - (wrap.clientHeight < 500 ? 11 : 9);
   // você (embaixo) sobe um pouco: suas cartas grandes ficam em cima da placa
   const lift = j === 0 ? Math.min(7, 9000 / Math.max(300, wrap.clientHeight) * 0.6) : 0;
@@ -1224,7 +1502,7 @@ function legal(i) {
   const L = E.legalActions(state, i);
   return L && { canCheck: L.canCheck, toCall: L.toCall, canRaise: L.canRaise, minTo: L.minRaiseTo, maxTo: L.maxRaiseTo };
 }
-const BADGE = { 'Passou': 'b-check', 'Pagou': 'b-call', 'Apostou': 'b-raise', 'Aumentou': 'b-raise', 'All-in': 'b-allin', 'Desistiu': 'b-fold' };
+const BADGE = { 'Passou': 'b-check', 'Pagou': 'b-call', 'Apostou': 'b-raise', 'Aumentou': 'b-raise', 'All-in': 'b-allin', 'Desistiu': 'b-fold', 'Straddle': 'b-raise' };
 
 let geo = { seats: {}, center: { x: 0, y: 0 }, pot: { x: 0, y: 0 } };
 
@@ -1251,7 +1529,13 @@ function render() {
     const { x, y } = seatPos(order.indexOf(i), order.length, wrap);
     const isMe = i === my;
     const { bx, by } = betPos(x, y, isMe);
-    const dx = x + (x <= 50 ? 1 : -1) * (isMeSeat(i, my) ? 20 : 17), dy = y + (y > 50 ? -1 : 3);
+    const dsx = x <= 50 ? 1 : -1;
+    // lugares laterais de cima: o "D" fica acima, perto das cartas, para não cobrir o logo
+    const upperSide = !isMe && y >= 20 && y < 50 && Math.abs(x - 50) > 15;
+    // lugares laterais do meio: o "D" fica colado no canto de cima da placa, longe do pote
+    const midSide = !isMe && y >= 42 && y < 64 && Math.abs(x - 50) > 15;
+    const dx = upperSide ? x + dsx * 14 : midSide ? x + dsx * 12 : x + dsx * (isMe ? 20 : 17);
+    const dy = upperSide ? y - 8 : midSide ? y - 4 : y + (y > 50 ? -1 : 3);
     g.seats[i] = { x: x * W / 100, y: y * H / 100, bx: bx * W / 100, by: by * H / 100 };
     const turn = state.toAct === i && active();
     const out = (!s.inHand && state.phase !== 'waiting') || s.folded || (s.sitOut && !s.inHand) || s.eliminated || s.waitingReentry;
@@ -1272,7 +1556,7 @@ function render() {
       if (reveal) lastRevealHand = state.handNumber;
       const n = state.seats.filter((x) => x && x.inHand).length;
       heroHTML = `<div class="hero-cards ${reveal ? 'reveal' : ''}">${heroCards.map((c, k) =>
-        cardHTML(c, `${s.folded ? 'dim' : ''} ${winSet.has(c) ? 'win' : ''}`, reveal ? `animation-delay:${0.3 + (k + 1) * n * 0.09}s` : '')).join('')}</div>`;
+        cardHTML(c, `${s.folded ? 'dim' : ''} ${winSet.has(c) ? 'win' : ''} ${s.shown && s.shown[k] && !showdownAll() ? 'showed' : ''}`, reveal ? `animation-delay:${0.3 + (k + 1) * n * 0.09}s` : '')).join('')}</div>`;
       const hl = handLabelTxt();
       if (hl && !showdown && !s.folded && (!tag || tag === 'SB' || tag === 'BB')) { tag = hl; cls = 'b-hand'; }
     }
@@ -1283,10 +1567,10 @@ function render() {
         ${isMe && state.settings.timeBankSeconds > 0 && !s.eliminated ? `<span class="bk">⏳ <span id="myBank">${Math.ceil(myBankLeft(s, i) / 1000)}</span> s de banco</span>` : ''}
         ${turn ? '<div class="tbar"><i></i></div>' : ''}</div>
       ${bank ? '<div class="bankt">Banco de tempo</div>' : ''}
-      ${tag ? `<div class="badge ${cls}">${esc(tag)}</div>` : ''}
+      ${eqHTML(i) || (tag ? `<div class="badge ${cls}">${esc(tag)}</div>` : '')}
       ${cards}
     </div>`;
-    if (state.dealer === i && state.handNumber > 0 && !s.eliminated) html += `<div class="dealer" style="left:${dx}%;top:${dy}%">D</div>`;
+    if (state.dealer === i && state.handNumber > 0 && !s.eliminated) html += `<div class="dealer" data-for="${i}" style="left:${dx}%;top:${dy}%">D</div>`;
     if (s.bet > 0) {
       const isNew = changedBets && s.bet > (changedBets[i] || 0);
       html += `<div class="bet ${isNew ? 'in' : ''}" style="left:${bx}%;top:${by}%">${chipStack(s.bet, 5)}<span class="pill">${amt(s.bet)}</span></div>`;
@@ -1297,7 +1581,15 @@ function render() {
 
   const prevBoard = prevSnap && prevSnap.hand === state.handNumber ? prevSnap.board : 0;
   let board = '';
+  const rabbit = state.phase === 'showdown' && Array.isArray(state.rabbit) ? state.rabbit : [];
+  const prevRabbit = prevSnap && prevSnap.hand === state.handNumber ? prevSnap.rabbit : 0;
   for (let i = 0; i < 5; i++) {
+    const ri = i - state.board.length;
+    if (ri >= 0 && ri < rabbit.length) {
+      const fresh = prevRabbit === 0;
+      board += cardHTML(rabbit[ri], `rabbit ${fresh ? 'deal' : ''}`, fresh ? `animation-delay:${0.5 + ri * 0.18}s` : '');
+      continue;
+    }
     const c = state.board[i];
     const delay = i >= prevBoard ? `animation-delay:${(i - prevBoard) * 0.15 + 0.25}s` : '';
     board += c ? cardHTML(c, `${winSet.size && !winSet.has(c) ? 'dim' : ''} ${winSet.has(c) ? 'win' : ''} ${i >= prevBoard ? 'deal' : ''}`, delay) : '<div class="slot"></div>';
@@ -1306,10 +1598,11 @@ function render() {
 
   const collected = potCollected();
   $('pot').innerHTML = active() && potTotal() > 0
-    ? `${collected > 0 ? chipPile(collected) : ''}<div class="pot-pill"><small>Pote total</small><b>${amt(potTotal())}</b></div>` : '';
+    ? `${collected > 0 ? chipPile(collected) : ''}<div class="pot-pill ${state.bomb ? 'bomb' : ''}"><small>${state.bomb ? '💣 Bomb pot' : 'Pote total'}</small><b>${amt(potTotal())}</b></div>` : '';
   const pr = $('pot').getBoundingClientRect(), wr = wrap.getBoundingClientRect();
   g.pot = pr.width ? { x: pr.left - wr.left + pr.width / 2, y: pr.top - wr.top + pr.height / 2 } : { x: W / 2, y: H * 0.42 };
   geo = g;
+  placeDealer(wrap, g);
 
   let msg = '';
   const isHost = mode === 'host';
@@ -1323,7 +1616,9 @@ function render() {
       const w = state.seats.filter((x) => x && x.waitingReentry);
       msg = w.length ? `Esperando ${w.map((x) => esc(x.name)).join(' e ')} decidir a reentrada…` : 'Esperando jogadores com fichas para continuar.';
     }
-    if (!state.started && E.isTourney(state)) msg += `<div class="note">Torneio: ${fmt(state.settings.startingStack)} fichas, blinds ${fmt(state.blinds.sb)}/${fmt(state.blinds.bb)} (ante ${fmt(state.blinds.ante)}), ${state.settings.levelMinutes} min por nível${state.settings.reentryLevels ? `, reentrada até o nível ${state.settings.reentryLevels}` : ', sem reentrada'}.</div>`;
+    if (state.spin && state.startAt) msg = `🎰 Prêmio sorteado: <strong>×${state.spin.mult}</strong>. A primeira mão já vai começar…`;
+    else if (!state.started && E.isSpin(state)) msg += `<div class="note">Spin &amp; Gold: 500 fichas, blinds 10/20 subindo a cada 3 min. O prêmio é sorteado ao começar (${state.settings.spinPreset === 'gg' ? '×2 até ×1000' : '×2 até ×10'}).</div>`;
+    else if (!state.started && E.isTourney(state)) msg += `<div class="note">Torneio: ${fmt(state.settings.startingStack)} fichas, blinds ${fmt(state.blinds.sb)}/${fmt(state.blinds.bb)} (ante ${fmt(state.blinds.ante)}), ${state.settings.levelMinutes} min por nível${state.settings.reentryLevels ? `, reentrada até o nível ${state.settings.reentryLevels}` : ', sem reentrada'}.</div>`;
   } else if (showdown && state.results) {
     const merged = [];
     for (const r of state.results) {
@@ -1339,15 +1634,31 @@ function render() {
       const verb = r.winners.length > 1 ? 'dividiram' : 'levou';
       return `<div><strong>${who}</strong> ${verb} ${amt(r.amount)}${r.handName ? ` com ${esc(r.handName.toLowerCase())}` : ''}${contested > 1 ? ` <span class="note">(${esc(r.label.toLowerCase())})</span>` : ''}</div>`;
     }).join('');
+    if (Array.isArray(state.rabbit) && state.rabbit.length) {
+      const street = state.board.length === 0 ? 'o flop' : state.board.length === 3 ? 'o turn' : 'o river';
+      msg += `<div class="note">👀 Se ninguém desistisse, ${street} seria esse</div>`;
+    }
     if (T && T.finished) msg += `<div style="margin-top:6px"><strong>🏆 ${esc(T.places[0].name)} venceu o torneio!</strong></div>`;
   }
   $('centerMsg').innerHTML = msg;
-  $('startBtn').hidden = !(isHost && state.phase === 'waiting' && !state.started);
+  $('startBtn').hidden = !(isHost && state.phase === 'waiting' && !state.started && !state.startAt);
+  $('startBtn').textContent = E.isSpin(state) ? 'Sortear o prêmio e começar' : 'Começar o jogo';
+  if (state.bombNext && state.phase !== 'waiting') msg += '<div class="note">💣 A próxima mão é bomb pot</div>';
   $('startBtn').disabled = seated < 2;
-  $('showBtn').hidden = !(showdown && state.showOffer && state.showOffer.seat === my && state.showOffer.handNumber === state.handNumber);
+  const canShow = showdown && state.showOffer && state.showOffer.seat === my && state.showOffer.handNumber === state.handNumber;
+  $('showBox').hidden = !canShow;
+  if (canShow && myHand && myHand.handNumber === state.handNumber) {
+    $('showOpts').innerHTML = `${myHand.cards.map((c) => cardHTML(c)).join('')}<button class="btn btn-small btn-light" data-show="both">Mostrar minhas cartas</button>`;
+    document.querySelectorAll('[data-show]').forEach((b) => {
+      b.onclick = () => send('show', { which: b.dataset.show === 'both' ? 'both' : +b.dataset.show });
+    });
+  }
 
   renderMe(my);
   updateTimers();
+  $('tableWrap').classList.toggle('allin', !!state.runout);
+  spinReveal();
+  tweenEquity();
   animateChanges(prevSnap, state, my);
   prevSnap = snapshot(state);
 
@@ -1358,12 +1669,71 @@ function render() {
   }
 }
 
+// Coloca o botão "D" num ponto livre perto do dono: testa posições em volta do lugar e fica com a que
+// não encosta em cartas, placas, apostas, pote e mesa. Usa áreas fixas (não as apostas do momento)
+// para o "D" não pular de lugar no meio da mão.
+function placeDealer(wrap, g) {
+  const D = document.querySelector('#seats .dealer');
+  if (!D) return;
+  const owner = +D.dataset.for;
+  const wr = wrap.getBoundingClientRect();
+  const R = (r) => ({ l: r.left - wr.left, t: r.top - wr.top, r: r.right - wr.left, b: r.bottom - wr.top });
+  const grow = (o, x1, y1, x2, y2) => ({ l: o.l - x1, t: o.t - y1, r: o.r + x2, b: o.b + y2 });
+  const box = (cx, cy, w, h) => ({ l: cx - w / 2, t: cy - h / 2, r: cx + w / 2, b: cy + h / 2 });
+  const obs = [];
+  let own = null;
+  for (const el of document.querySelectorAll('#seats .seat')) {
+    let o = R(el.getBoundingClientRect());
+    for (const c of el.querySelectorAll('.hero-cards, .shown, .holes')) {
+      const q = R(c.getBoundingClientRect()); o = { l: Math.min(o.l, q.l), t: Math.min(o.t, q.t), r: Math.max(o.r, q.r), b: Math.max(o.b, q.b) };
+    }
+    o = grow(o, 4, el.classList.contains('hero') ? 4 : 14, 4, 30); // cartas por cima, etiqueta (Pagou/%) por baixo
+    obs.push([o, 1]);
+    if (+el.dataset.seat === owner) own = o;
+  }
+  if (!own) return;
+  for (const k in g.seats) obs.push([box(g.seats[k].bx, g.seats[k].by, 84, 28), 1]);
+  const bd = $('board').getBoundingClientRect();
+  if (bd.width) obs.push([grow(R(bd), 4, 4, 4, 4), 1]);
+  const pe = $('pot').getBoundingClientRect();
+  const pc = pe.width ? { x: (pe.left + pe.right) / 2 - wr.left, y: (pe.top + pe.bottom) / 2 - wr.top } : { x: g.pot.x, y: g.pot.y };
+  obs.push([box(pc.x, pc.y, Math.max(200, pe.width + 8), Math.max(40, pe.height + 8)), 1]);
+  const lg = document.querySelector('.felt-logo');
+  if (lg) obs.push([R(lg.getBoundingClientRect()), 0.15]);
+  const W = wr.width, H = wr.height, h = 13; // meio "D" + folga
+  const ocx = (own.l + own.r) / 2, ocy = (own.t + own.b) / 2;
+  const toCenter = Math.atan2(H / 2 - ocy, W / 2 - ocx);
+  let best = null;
+  for (let ring = 0; ring < 4; ring++) {
+    for (let a = 0; a < 24; a++) {
+      const ang = toCenter + (a % 2 ? 1 : -1) * Math.ceil(a / 2) * Math.PI / 12;
+      // ponto logo fora da caixa do lugar, na direção do ângulo
+      const dxu = Math.cos(ang), dyu = Math.sin(ang);
+      const tx = dxu ? ((dxu > 0 ? own.r : own.l) - ocx) / dxu : Infinity;
+      const ty = dyu ? ((dyu > 0 ? own.b : own.t) - ocy) / dyu : Infinity;
+      const d = Math.min(Math.abs(tx), Math.abs(ty)) + h + ring * 10;
+      const cx = ocx + dxu * d, cy = ocy + dyu * d;
+      const me = { l: cx - h, t: cy - h, r: cx + h, b: cy + h };
+      let cost = (me.l < 2 || me.t < 2 || me.r > W - 2 || me.b > H - 2) ? 1e6 : 0;
+      for (const [o, w] of obs) {
+        const ox = Math.min(me.r, o.r) - Math.max(me.l, o.l), oy = Math.min(me.b, o.b) - Math.max(me.t, o.t);
+        if (ox > 0 && oy > 0) cost += ox * oy * w;
+      }
+      cost += ring * 30 + Math.ceil(a / 2) * 4; // preferir colado no lugar e virado para o meio
+      if (!best || cost < best.cost) best = { cost, cx, cy };
+    }
+  }
+  D.style.left = (best.cx / W * 100) + '%';
+  D.style.top = (best.cy / H * 100) + '%';
+}
+
 function renderBlindsLine() {
   if (!state) return;
   const b = state.blinds;
   const T = state.tourney;
   const tour = E.isTourney(state);
-  $('idText').textContent = tableId.toUpperCase() + (tour && T && !T.finished ? ` · Nível ${b.level + 1}` : '');
+  const spinTag = state.spin ? ` · 🎰×${state.spin.mult}` : (E.isSpin(state) ? ' · Spin' : '');
+  $('idText').textContent = tableId.toUpperCase() + spinTag + (tour && T && !T.finished ? ` · Nível ${b.level + 1}` : '');
   let t = `${fmt(b.sb)}/${fmt(b.bb)}${b.ante ? ` · ante ${fmt(b.ante)}` : ''}`;
   if (T && !T.finished && T.nextLevelAt) {
     const left = Math.max(0, T.nextLevelAt - now());
@@ -1378,6 +1748,12 @@ function renderMe(my) {
   $('myHand').textContent = s && s.folded && active() ? 'Você desistiu' : '';
 
   $('offlineBubble').hidden = !(s && s.sitOut && !s.eliminated && !s.waitingReentry);
+  const canStraddle = s && state.settings.allowStraddle && !s.eliminated && !s.waitingReentry && state.seats.filter((x) => x && (x.inHand || !x.eliminated)).length >= 3;
+  $('straddleBtn').hidden = !canStraddle;
+  if (canStraddle) {
+    $('straddleBtn').setAttribute('aria-pressed', !!s.straddleOn);
+    $('straddleBtn').innerHTML = `Straddle<small>${s.straddleOn ? 'ligado · 2 BB' : '2 BB'}</small>`;
+  }
   $('reactBtn').hidden = !s;
 
   const pending = Date.now() < pendingUntil;
@@ -1411,6 +1787,7 @@ function renderMe(my) {
   else if (s.sitOut) note = 'Você está offline. Toque no balão no canto para voltar.';
   else if (s.stack === 0 && !(s.inHand && active() && !s.folded)) note = state.settings.allowRebuy
     ? `<button class="btn btn-gold" id="rebuyBtn">Recomprar ${fmt(state.settings.startingStack)} fichas</button>` : 'Suas fichas acabaram.';
+  else if (state.runout && s.inHand && !s.folded) note = 'All-in! A mesa está virando…';
   else if (active() && s.inHand && !s.folded) {
     const t = state.seats[state.toAct];
     note = s.allIn ? 'Você está all-in.' : (t ? `Vez de ${esc(t.name)}` : '');
@@ -1430,12 +1807,19 @@ function renderMe(my) {
       const r = $('raiseRange');
       r.min = L.minTo; r.max = L.maxTo; r.step = Math.max(1, Math.floor(state.blinds.sb));
       const key = `${state.handNumber}-${state.phase}-${state.currentBet}`;
-      if (raiseKey !== key || raiseTo < L.minTo || raiseTo > L.maxTo) { raiseTo = L.minTo; raiseKey = key; }
+      if (raiseKey !== key || raiseTo < L.minTo || raiseTo > L.maxTo) { raiseTo = L.minTo; raiseKey = key; raiseBad = false; }
       r.value = raiseTo;
-      $('raiseAmt').textContent = amt(raiseTo);
+      const inp = $('raiseInput');
+      if (document.activeElement !== inp) { inp.value = amtPlain(raiseTo); raiseBad = false; }
+      $('raiseUnit').textContent = unitBB ? 'BB' : 'fichas';
+      $('raiseCards').innerHTML = (myCardsNow() || []).map((c) => cardHTML(c)).join('');
+      inp.inputMode = unitBB ? 'decimal' : 'numeric';
+      $('raiseHint').textContent = raiseBad ? `O mínimo é ${amt(L.minTo)}` : `Mín ${amt(L.minTo)} · Máx ${amt(L.maxTo)} (all-in)`;
+      $('raiseHint').classList.toggle('bad', raiseBad);
       const label = state.currentBet === 0 ? 'Apostar' : 'Aumentar';
       $('raiseLabel').textContent = state.currentBet === 0 ? 'Apostar' : 'Aumentar para';
       $('raiseBtn').innerHTML = raiseOpen ? `${raiseTo === L.maxTo ? 'All-in' : label}<b>${amt(raiseTo)}</b>` : label;
+      if (raiseOpen && raiseBad) $('raiseBtn').disabled = true;
     } else {
       $('raiseBtn').textContent = 'Aumentar';
       raiseOpen = false;
@@ -1464,6 +1848,8 @@ function betPos(x, y, hero) {
   return { bx: x, by: y + 15 };
 }
 
+// mão terminou com showdown (todos mostraram): não precisa marcar "mostrada"
+const showdownAll = () => !!(state.results && state.results.some((r) => r.handName));
 let lastRevealHand = -1;
 const isMeSeat = (i, my) => i === my;
 function myCardsNow() {
@@ -1511,6 +1897,50 @@ function buzz() {
 /* ==================================================================
    ANIMAÇÕES
    ================================================================== */
+/* Porcentagem de vitória no all-in */
+let eqPrev = {}, eqHand = -1, eqBoard = -1;
+function eqHTML(i) {
+  const eq = state.runout && state.runout.equity;
+  if (!eq || eq[i] === undefined) return '';
+  if (eqHand !== state.handNumber) { eqPrev = {}; eqHand = state.handNumber; }
+  const v = eq[i];
+  const vals = Object.values(eq);
+  const max = Math.max(...vals);
+  const from = eqPrev[i] === undefined ? 0 : eqPrev[i];
+  const changed = from !== v;
+  const cls = v >= 100 ? 'win' : v <= 0 ? 'dead' : (v === max ? 'lead' : '');
+  return `<div class="eq ${cls} ${changed ? 'pop' : ''}" style="--from:${from}%;--to:${v}%">
+    <span class="eqn" data-from="${from}" data-to="${v}">${Math.round(v)}%</span><i></i></div>`;
+}
+function tweenEquity() {
+  const eq = state && state.runout && state.runout.equity;
+  if (!eq) return;
+  document.querySelectorAll('.eqn').forEach((el) => {
+    const a = +el.dataset.from, b = +el.dataset.to;
+    if (a === b) return;
+    const t0 = performance.now(), D = 900;
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = `${Math.round(a + (b - a) * e)}%`;
+      if (k < 1 && el.isConnected) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+  if (eqBoard !== state.board.length || eqHand !== state.handNumber) {
+    eqBoard = state.board.length;
+    for (const [k, v] of Object.entries(eq)) eqPrev[k] = v;
+  }
+}
+function allinBanner(text = 'ALL-IN', icon = '') {
+  const el = document.createElement('div');
+  el.className = `allin-banner ${icon ? 'with-icon' : ''}`;
+  el.innerHTML = `${icon ? `<i>${icon}</i>` : ''}<span>${esc(text)}</span>`;
+  $('fx').appendChild(el);
+  setTimeout(() => el.remove(), 2700);
+  Sfx.allin();
+  try { navigator.vibrate && navigator.userActivation && navigator.userActivation.hasBeenActive && navigator.vibrate([40, 60, 40]); } catch {}
+}
+
 function snapshot(st) {
   return {
     hand: st.handNumber, phase: st.phase, board: st.board.length,
@@ -1519,6 +1949,8 @@ function snapshot(st) {
     folded: st.seats.map((s) => (s ? s.folded : false)),
     inHand: st.seats.map((s) => !!(s && s.inHand)),
     results: !!st.results,
+    runout: !!st.runout,
+    rabbit: Array.isArray(st.rabbit) ? st.rabbit.length : 0,
   };
 }
 
@@ -1541,7 +1973,8 @@ function animateChanges(prev, st, my) {
   const mine = (i) => seats[i];
 
   // nova mão: embaralha e distribui uma a uma
-  if (st.handNumber > prev.hand && st.phase === 'preflop') {
+  if (st.handNumber > prev.hand && st.bomb) allinBanner('BOMB POT', '💣');
+  if (st.handNumber > prev.hand && (st.phase === 'preflop' || st.bomb)) {
     Sfx.shuffle();
     const order = [];
     for (let k = 1; k <= 9; k++) { const i = (st.dealer + k) % 9; if (st.seats[i] && st.seats[i].inHand) order.push(i); }
@@ -1569,7 +2002,9 @@ function animateChanges(prev, st, my) {
   });
 
   // fim da rodada de apostas: fichas vão para o pote
-  const collect = (st.board.length > prev.board || (st.phase === 'showdown' && prev.phase !== 'showdown'));
+  if (st.runout && !prev.runout) allinBanner();
+  if (Array.isArray(st.rabbit) && st.rabbit.length && !prev.rabbit) st.rabbit.forEach((_, k) => Sfx.flip(0.5 + k * 0.18));
+  const collect = (st.board.length > prev.board || (st.phase === 'showdown' && prev.phase !== 'showdown') || (st.runout && !prev.runout));
   if (collect) {
     let any = false;
     prev.bets.forEach((b, i) => {
@@ -1594,22 +2029,80 @@ function animateChanges(prev, st, my) {
   }
 }
 
+/* ---------- Roleta do Spin & Gold ---------- */
+let reelFor = '';
+function spinReveal() {
+  const sp = state && state.spin;
+  const show = !!(sp && state.startAt && state.phase === 'waiting');
+  if (!show) { $('spinReveal').hidden = true; return; }
+  const key = `${state.code}-${sp.at}`;
+  if (reelFor === key) return;
+  reelFor = key;
+  const mults = (E.SPIN_PRESETS[sp.preset] || E.SPIN_PRESETS.amigos).map((x) => x[0]);
+  const items = [];
+  for (let i = 0; i < 34; i++) items.push(mults[(i * 7 + 3) % mults.length]);
+  items.push(sp.mult);
+  $('reelStrip').innerHTML = items.map((m) => `<div class="${m >= 10 ? 'big' : ''}">×${m}</div>`).join('');
+  $('reelResult').innerHTML = 'Sorteando o prêmio…';
+  $('reel').classList.remove('win');
+  $('spinReveal').hidden = false;
+  const total = 4300, elapsed = Math.max(0, now() - sp.at);
+  const end = -(items.length - 1) * 120;
+  const finish = () => {
+    $('reelStrip').style.transform = `translateY(${end}px)`;
+    $('reelResult').innerHTML = `Prêmio do campeão<b>×${sp.mult}</b>`;
+    if (sp.mult >= 10) $('reel').classList.add('win');
+    Sfx.win();
+  };
+  if (elapsed >= total || matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
+  const anim = $('reelStrip').animate([{ transform: 'translateY(0)' }, { transform: `translateY(${end}px)` }],
+    { duration: total - elapsed, easing: 'cubic-bezier(.12,.75,.12,1)', fill: 'forwards' });
+  let lastItem = -1;
+  const tickSound = () => {
+    if (anim.playState !== 'running') return;
+    const y = new DOMMatrix(getComputedStyle($('reelStrip')).transform).m42;
+    const idx = Math.floor(-y / 120);
+    if (idx !== lastItem) { lastItem = idx; Sfx.tone(1200, 0.03, { type: 'square', gain: 0.03 }); }
+    requestAnimationFrame(tickSound);
+  };
+  requestAnimationFrame(tickSound);
+  anim.onfinish = finish;
+}
+
 /* ---------- Reações ---------- */
 function showReaction(seat, text) {
   const p = geo.seats[seat]; if (!p) return;
   const el = document.createElement('div');
   el.className = `bubble ${EMOJIS.includes(text) ? 'emoji' : ''}`;
   el.textContent = text;
-  el.style.left = `${p.x}px`; el.style.top = `${p.y - 30}px`;
+  const dur = Math.min(7, 2.8 + String(text).length * 0.06);
+  el.style.animationDuration = `${dur}s`;
+  el.style.left = `${Math.max(90, Math.min(p.x, $('tableWrap').clientWidth - 90))}px`; el.style.top = `${Math.max(56, p.y - 30)}px`;
   $('fx').appendChild(el);
   Sfx.pop();
-  setTimeout(() => el.remove(), 2900);
+  setTimeout(() => el.remove(), dur * 1000 + 100);
 }
+$('straddleBtn').onclick = () => {
+  const my = mySeatIdx(); if (my < 0) return;
+  const on = !state.seats[my].straddleOn;
+  send('straddle', { value: on });
+  toast(on ? 'Straddle ligado: quando você for o 1º a falar, põe 2 BB às cegas.' : 'Straddle desligado', 3200);
+};
 $('reactBtn').onclick = () => {
   openSheet(`<h2>Reagir</h2>
+    <form class="chat" id="chatForm" autocomplete="off">
+      <input id="chatInput" class="input" maxlength="60" placeholder="Escreva uma mensagem…" enterkeyhint="send" aria-label="Mensagem">
+      <button class="btn btn-fire" id="chatSend">Enviar</button>
+    </form>
     <div class="react-grid">${EMOJIS.map((e) => `<button data-r="${e}">${e}</button>`).join('')}</div>
     <div class="phrases">${PHRASES.map((p) => `<button data-r="${esc(p)}">${esc(p)}</button>`).join('')}</div>`);
   document.querySelectorAll('[data-r]').forEach((b) => { b.onclick = () => { closeSheet(); send('react', { text: b.dataset.r }); }; });
+  $('chatForm').onsubmit = (e) => {
+    e.preventDefault();
+    const t = $('chatInput').value.trim();
+    if (!t) { $('chatInput').focus(); return; }
+    closeSheet(); send('react', { text: t, custom: true });
+  };
 };
 
 /* ---------- Ações ---------- */
@@ -1625,6 +2118,38 @@ $('raiseBtn').onclick = () => {
   if (!raiseOpen) { raiseOpen = true; render(); return; }
   sendAction('raise', raiseTo);
 };
+/* Valor digitado: "1.500", "2k" em fichas; "12,5" quando a tela está em BB */
+let raiseBad = false;
+function amtPlain(n) {
+  if (!unitBB) return fmt(n);
+  return (Math.round((n / curBB()) * 10) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+}
+function parseTyped(txt) {
+  let t = String(txt || '').trim().toLowerCase().replace(/\s/g, '');
+  if (!t) return NaN;
+  let mult = 1;
+  if (t.endsWith('k')) { mult = 1000; t = t.slice(0, -1); }
+  if (t.endsWith('bb')) { t = t.slice(0, -2); }
+  let v;
+  if (unitBB) v = parseFloat(t.replace(/\./g, '').replace(',', '.')) * curBB();
+  else if (mult > 1) v = parseFloat(t.replace(',', '.')) * mult;
+  else v = parseFloat(t.replace(/[.,]/g, ''));
+  return Number.isFinite(v) ? Math.round(v) : NaN;
+}
+$('raiseInput').addEventListener('focus', (e) => setTimeout(() => e.target.select(), 0));
+$('raiseInput').addEventListener('input', (e) => {
+  const L = legal(mySeatIdx()); if (!L || !L.canRaise) return;
+  const v = parseTyped(e.target.value);
+  if (!Number.isFinite(v)) { raiseBad = true; raiseTo = L.minTo; }
+  else if (v < L.minTo && v < L.maxTo) { raiseBad = true; raiseTo = L.minTo; }
+  else { raiseBad = false; raiseTo = Math.min(v, L.maxTo); }
+  render();
+});
+$('raiseInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); if (!raiseBad) { e.target.blur(); $('raiseBtn').click(); } }
+});
+$('raiseInput').addEventListener('blur', () => { raiseBad = false; render(); });
+
 $('raiseRange').oninput = (e) => {
   raiseTo = +e.target.value;
   const L = legal(mySeatIdx());
@@ -1642,14 +2167,13 @@ document.querySelectorAll('[data-preset]').forEach((b) => {
   };
 });
 $('startBtn').onclick = () => send('start');
-$('showBtn').onclick = () => send('show');
 $('offlineBubble').onclick = () => send('sitout', { value: false });
 
 $('idBtn').onclick = () => shareText(`Bora jogar poker no PokerTrama! 🔥\nMesa: ${tableId.toUpperCase()}\nSenha: ${tablePw}`);
 
 /* ---------- Placar e menu ---------- */
 function openSheet(html) { $('sheet').innerHTML = html; $('sheetBg').hidden = false; }
-function closeSheet() { $('sheetBg').hidden = true; }
+function closeSheet() { $('sheetBg').hidden = true; seasonOpen = false; }
 $('sheetBg').onclick = (e) => { if (e.target === $('sheetBg')) closeSheet(); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeSheet(); } });
 
@@ -1688,6 +2212,8 @@ $('menuBtn').onclick = () => {
     <div class="cred">ID <b>${esc(tableId.toUpperCase())}</b> &nbsp; Senha <b>${esc(tablePw)}</b></div>
     <div class="sheet-actions">
       <button class="btn btn-small btn-gold" id="sumBtn">Resumo da noite</button>
+      <button class="btn btn-small" id="seasonBtn">🏆 Temporada</button>
+      ${isHost && state.settings.bomb && state.settings.bomb.on ? `<button class="btn btn-small" id="bombBtn">${state.bombNext ? 'Cancelar bomb pot' : '💣 Bomb pot na próxima mão'}</button>` : ''}
       ${E.isTourney(state) ? '<button class="btn btn-small" id="structBtn">Estrutura de blinds</button>' : ''}
       <button class="btn btn-small" id="soundBtn">${Sfx.on ? '🔊 Som ligado' : '🔇 Som desligado'}</button>
       ${s && !s.sitOut && !s.eliminated ? '<button class="btn btn-small" id="sitBtn">Ficar offline</button>' : ''}
@@ -1709,6 +2235,8 @@ $('menuBtn').onclick = () => {
     openSheet(`<h2>Estrutura de blinds</h2><table class="score struct"><tr><th>Nível</th><th>Blinds</th><th>Ante</th><th>Intervalo</th></tr>${rows}</table>`);
   };
   $('sumBtn').onclick = () => { closeSheet(); openSummary(state, false); };
+  $('seasonBtn').onclick = () => openSeason();
+  if ($('bombBtn')) $('bombBtn').onclick = () => { closeSheet(); send('bomb', { value: !state.bombNext }); };
   $('soundBtn').onclick = () => { Sfx.on = !Sfx.on; lsSet('pt.sound', Sfx.on ? 'on' : 'off'); Sfx.unlock(); $('menuBtn').click(); };
   if ($('sitBtn')) $('sitBtn').onclick = () => { closeSheet(); send('sitout', { value: true }); };
   $('leaveBtn').onclick = () => {
@@ -1746,7 +2274,8 @@ function openSummary(st, final) {
   const isHost = mode === 'host';
   const best = rec.bestHand, big = rec.biggestPot;
   $('summary').innerHTML = `<div class="sum">
-    <h1>${podium ? '🏆 Fim do torneio' : 'Resumo da noite'}</h1>
+    <h1>${podium ? (st.spin ? '🎰 Fim do Spin &amp; Gold' : '🏆 Fim do torneio') : 'Resumo da noite'}</h1>
+    ${podium && st.spin ? `<p class="spin-prize">Prêmio do campeão: <b>×${st.spin.mult}</b></p>` : ''}
     <p class="date">PokerTrama · mesa ${esc(String(st.code || '').toUpperCase())} · ${esc(date)}</p>
     ${podium ? `<div class="podium">${pod(podium[1], 2)}${pod(podium[0], 1)}${pod(podium[2], 3)}</div>` : ''}
     <div class="sum-card"><h3>Destaques</h3>
@@ -1762,7 +2291,8 @@ function openSummary(st, final) {
     </div>
     <div class="sum-actions">
       <button class="btn btn-fire" id="sumShare">Mandar no grupo</button>
-      ${podium && isHost && !final ? '<button class="btn btn-gold" id="sumNew">Começar outro torneio</button>' : ''}
+      ${podium && isHost && !final ? `<button class="btn btn-gold" id="sumNew">${st.spin ? 'Novo Spin &amp; Gold' : 'Começar outro torneio'}</button>` : ''}
+      ${podium ? '<button class="btn" id="sumSeason">🏆 Ranking da temporada</button>' : ''}
       <button class="btn" id="sumClose">${final ? 'Voltar ao início' : 'Voltar para a mesa'}</button>
     </div>
   </div>`;
@@ -1770,12 +2300,13 @@ function openSummary(st, final) {
   $('sumShare').onclick = () => shareText(summaryText(st));
   $('sumClose').onclick = () => { $('summary').hidden = true; };
   if ($('sumNew')) $('sumNew').onclick = () => { $('summary').hidden = true; send('newtourney'); };
+  if ($('sumSeason')) $('sumSeason').onclick = () => { $('summary').hidden = true; openSeason(); };
 }
 
 function summaryText(st) {
   const { players, rec } = nightData(st);
   const T = st.tourney;
-  const L = [`🔥 PokerTrama — ${T && T.finished ? 'Resultado do torneio' : 'Resumo da noite'} (${new Date().toLocaleDateString('pt-BR')})`];
+  const L = [`🔥 PokerTrama — ${T && T.finished ? (st.spin ? `Spin & Gold ×${st.spin.mult}` : 'Resultado do torneio') : 'Resumo da noite'} (${new Date().toLocaleDateString('pt-BR')})`];
   if (T && T.finished) {
     const m = ['🏆', '🥈', '🥉'];
     T.places.slice(0, 3).forEach((p, i) => L.push(`${m[i]} ${p.place}º ${p.name}`));

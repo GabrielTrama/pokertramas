@@ -1,3 +1,4 @@
+# Gera o APK do PokerTramaS na nuvem do GitHub (grátis). Veja o README.
 name: Gerar APK
 on:
   workflow_dispatch:
@@ -21,10 +22,12 @@ jobs:
           npx cap add android
           npm run icons
           npx cap sync android
+      - name: Usar sempre a mesma assinatura (para atualizar sem desinstalar)
+        run: mkdir -p ~/.android && cp android-debug.keystore ~/.android/debug.keystore
       - name: Compilar APK
         working-directory: android
         run: ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: PokerTramaS-apk
+          name: PokerTrama-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

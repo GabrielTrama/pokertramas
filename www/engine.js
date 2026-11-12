@@ -32,7 +32,8 @@ const LOG_MAX = 50;
 
 const DEFAULT_SETTINGS = {
   mode: 'torneio',
-  startingStack: 20000,
+  startingStack: 20000,     // torneio
+  cashStack: 5000,          // cash
   smallBlind: 100,
   bigBlind: 200,
   levelMinutes: 8,
@@ -43,6 +44,19 @@ const DEFAULT_SETTINGS = {
 };
 // Estrutura do torneio (para big blind inicial 200; outros valores são proporcionais).
 // long = usa os minutos do nível escolhidos (8); os níveis finais andam mais rápido (5/8 disso).
+// Spin & Gold: torneio rápido e fixo (500 fichas, 10/20, 3 min por nível, sem ante)
+const SPIN = { stack: 500, sb: 10, bb: 20, minutes: 3, revealMs: 6500 };
+const SPIN_STRUCTURE = [
+  [10, 20], [15, 30], [20, 40], [25, 50], [30, 60], [40, 80], [50, 100], [60, 120], [80, 160],
+  [100, 200], [120, 240], [150, 300], [200, 400], [250, 500], [300, 600], [400, 800], [500, 1000],
+];
+// Sorteio do prêmio: [multiplicador, chance em %]
+const SPIN_PRESETS = {
+  amigos: [[2, 60], [3, 25], [5, 12], [10, 3]],
+  gg: [[2, 75], [3, 15], [5, 6.5], [10, 3], [25, 0.4], [100, 0.09], [1000, 0.01]],
+};
+const BOMB_DEFAULT = { on: true, every: 10, bb: 2 };
+
 const STRUCTURE = [
   { sb: 100, bb: 200, ante: 30, long: true },
   { sb: 125, bb: 250, ante: 35, long: true },
@@ -68,6 +82,10 @@ const STRUCTURE = [
   { sb: 10000, bb: 20000, ante: 3000 },
 ];
 const NEXT_HAND_DELAY_MS = 7000;
+// all-in: cartas abertas e mesa virando uma rua de cada vez
+const RUNOUT_FIRST_MS = 2600;  // tempo com as cartas abertas antes do flop
+const RUNOUT_STREET_MS = 2300; // entre flop, turn e river
+const RUNOUT_END_MS = 1400;    // depois do river, antes do resultado
 const MAX_TIMEOUTS_BEFORE_SITOUT = 1; // estourou o tempo (e o banco) = offline
 const COLORS = ['#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA', '#00ACC1', '#F4C430', '#EC407A', '#6D4C41'];
 
@@ -196,12 +214,31 @@ function cleanSettings(s = {}) {
     if (!Number.isFinite(x)) return def;
     return Math.min(max, Math.max(min, x));
   };
-  const mode = s.mode === 'cash' ? 'cash' : 'torneio';
+  const mode = s.mode === 'cash' ? 'cash' : s.mode === 'spin' ? 'spin' : 'torneio';
+  const b = s.bomb || {};
+  const extras = {
+    allowStraddle: s.allowStraddle === undefined ? true : !!s.allowStraddle,
+    bomb: {
+      on: b.on === undefined ? BOMB_DEFAULT.on : !!b.on,
+      every: num(b.every, BOMB_DEFAULT.every, 0, 100),
+      bb: num(b.bb, BOMB_DEFAULT.bb, 1, 20),
+    },
+  };
+  if (mode === 'spin') {
+    // formato fixo
+    return {
+      mode, startingStack: SPIN.stack, smallBlind: SPIN.sb, bigBlind: SPIN.bb, levelMinutes: SPIN.minutes,
+      reentryLevels: 0, turnSeconds: num(s.turnSeconds, DEFAULT_SETTINGS.turnSeconds, 5, 300),
+      timeBankSeconds: num(s.timeBankSeconds, DEFAULT_SETTINGS.timeBankSeconds, 0, 600),
+      allowRebuy: false, spinPreset: s.spinPreset === 'gg' ? 'gg' : 'amigos', ...extras,
+    };
+  }
   const bigBlind = num(s.bigBlind, DEFAULT_SETTINGS.bigBlind, 2, 1e7);
   const smallBlind = num(s.smallBlind, Math.floor(bigBlind / 2), 1, bigBlind);
   return {
+    ...extras,
     mode,
-    startingStack: num(s.startingStack, DEFAULT_SETTINGS.startingStack, bigBlind * 10, 1e9),
+    startingStack: num(s.startingStack, mode === 'cash' ? DEFAULT_SETTINGS.cashStack : DEFAULT_SETTINGS.startingStack, bigBlind * 10, 1e9),
     smallBlind,
     bigBlind,
     levelMinutes: num(s.levelMinutes, DEFAULT_SETTINGS.levelMinutes, 1, 120),
@@ -264,7 +301,9 @@ function seatOf(state, uid) {
   return state.seats.findIndex((s) => s && s.uid === uid);
 }
 
-const isTourney = (state) => state.settings.mode === 'torneio';
+const isTourney = (state) => state.settings.mode !== 'cash';
+const isSpin = (state) => state.settings.mode === 'spin';
+const structLen = (state) => (isSpin(state) ? SPIN_STRUCTURE.length : STRUCTURE.length);
 const tourneyRunning = (state) => isTourney(state) && state.started && !(state.tourney && state.tourney.finished);
 
 /**
@@ -363,6 +402,10 @@ function nextSeat(state, from, pred) {
 function blindLevel(state, level) {
   const st = state.settings;
   if (!isTourney(state)) return { sb: st.smallBlind, bb: st.bigBlind, ante: 0, level: 0, ms: 0 };
+  if (isSpin(state)) {
+    const lv = Math.min(level, SPIN_STRUCTURE.length - 1);
+    return { sb: SPIN_STRUCTURE[lv][0], bb: SPIN_STRUCTURE[lv][1], ante: 0, level: lv, ms: st.levelMinutes * 60000 };
+  }
   const lv = Math.min(level, STRUCTURE.length - 1);
   const e = STRUCTURE[lv];
   const k = st.bigBlind / 200;
@@ -376,14 +419,14 @@ function blindLevel(state, level) {
 
 /** Tabela completa (para mostrar na tela). */
 function structure(state) {
-  return STRUCTURE.map((_, i) => blindLevel(state, i));
+  return Array.from({ length: structLen(state) }, (_, i) => blindLevel(state, i));
 }
 
 /** Nível do torneio pelo relógio e quando ele termina. */
 function levelAt(state, now) {
   const t = state.tourney;
   let lvl = 0, end = t.startedAt + blindLevel(state, 0).ms;
-  while (now >= end && lvl < STRUCTURE.length - 1) { lvl++; end += blindLevel(state, lvl).ms; }
+  while (now >= end && lvl < structLen(state) - 1) { lvl++; end += blindLevel(state, lvl).ms; }
   return { lvl, end };
 }
 
@@ -406,9 +449,9 @@ function updateBlinds(state, now) {
   const { lvl, end } = levelAt(state, now);
   if (lvl !== state.blinds.level) {
     state.blinds = blindLevel(state, lvl);
-    log(state, `Blinds subiram para ${state.blinds.sb}/${state.blinds.bb} (ante ${state.blinds.ante})`);
+    log(state, `Blinds subiram para ${state.blinds.sb}/${state.blinds.bb}${state.blinds.ante ? ` (ante ${state.blinds.ante})` : ''}`);
   }
-  t.nextLevelAt = lvl >= STRUCTURE.length - 1 ? 0 : end;
+  t.nextLevelAt = lvl >= structLen(state) - 1 ? 0 : end;
 }
 
 const aliveInTourney = (state) => state.seats.filter((s) => s && !s.eliminated && !s.leaving && s.stack > 0);
@@ -448,7 +491,17 @@ function checkTourneyEnd(state, now) {
   t.finishedAt = now;
   touchStats(state, w.uid, w.name).tourneyWins += 1;
   state.nextHandAt = 0;
-  log(state, `🏆 ${w.name} venceu o torneio!`);
+  t.result = {
+    id: `${state.code}-${t.startedAt}`,
+    at: now,
+    mode: state.settings.mode,
+    mult: state.spin ? state.spin.mult : 0,
+    code: state.code,
+    players: t.places.map((p) => ({ pid: p.uid, name: p.name, place: p.place })),
+  };
+  log(state, isSpin(state) && state.spin
+    ? `🏆 ${w.name} venceu o Spin & Gold ×${state.spin.mult}!`
+    : `🏆 ${w.name} venceu o torneio!`);
 }
 
 /** Prepara um torneio novo com os mesmos jogadores (fichas zeradas para o inicial). */
@@ -467,6 +520,8 @@ function newTournament(state) {
     });
   }
   state.tourney = null;
+  state.spin = null;
+  state.startAt = 0;
   state.started = false;
   state.phase = 'waiting';
   state.results = null;
@@ -476,7 +531,40 @@ function newTournament(state) {
   state.deadline = 0;
   state.nextHandAt = 0;
   state.blinds = blindLevel(state, 0);
-  log(state, '— Novo torneio —');
+  log(state, isSpin(state) ? '— Novo Spin & Gold —' : '— Novo torneio —');
+}
+
+/** Sorteia o multiplicador do Spin & Gold; a primeira mão começa depois da animação. */
+function drawSpin(state, now = Date.now(), rnd) {
+  if (!isSpin(state)) throw new GameError('Esta mesa não é Spin & Gold');
+  if (state.started || state.startAt) throw new GameError('O Spin já começou');
+  const eligible = state.seats.filter((s) => canPlayNextHand(state, s));
+  if (eligible.length < 2) throw new GameError('São necessários pelo menos 2 jogadores');
+  const table = SPIN_PRESETS[state.settings.spinPreset] || SPIN_PRESETS.amigos;
+  const total = table.reduce((t, x) => t + x[1], 0);
+  // número em [0, total) com gerador criptográfico (precisão de 0,0001%)
+  let r = (rnd ? rnd() : secureRandInt(1000000) / 1000000) * total;
+  let mult = table[0][0];
+  for (const [m, w] of table) { if (r < w) { mult = m; break; } r -= w; }
+  state.spin = { mult, preset: state.settings.spinPreset, at: now };
+  state.startAt = now + SPIN.revealMs;
+  log(state, `🎰 Sorteio do Spin & Gold: ×${mult}`);
+  return mult;
+}
+
+/** Liga/desliga o straddle do jogador (vale quando ele for o primeiro a falar). */
+function setStraddle(state, uid, on) {
+  const i = seatOf(state, uid);
+  if (i < 0) throw new GameError('Você não está na mesa');
+  if (!state.settings.allowStraddle) throw new GameError('Straddle desligado nesta mesa');
+  state.seats[i].straddleOn = !!on;
+}
+
+/** O anfitrião chama um bomb pot para a próxima mão. */
+function callBomb(state, on = true) {
+  if (!state.settings.bomb || !state.settings.bomb.on) throw new GameError('Bomb pot desligado nesta mesa');
+  state.bombNext = !!on;
+  if (on) log(state, '💣 Bomb pot na próxima mão');
 }
 
 /* ------------------------------------------------------------------ */
@@ -509,6 +597,8 @@ function startHand(state, now = Date.now(), randInt) {
   state.board = [];
   state.results = null;
   state.showOffer = null;
+  state.runout = null;
+  state.rabbit = null;
   state.nextHandAt = 0;
   state.usingBank = false;
   for (const s of state.seats) {
@@ -537,6 +627,33 @@ function startHand(state, now = Date.now(), randInt) {
   }
 
   log(state, `— Mão #${state.handNumber} —`);
+  const ctx = { deck, hands };
+  const bombCfg = state.settings.bomb || {};
+  const bomb = !!bombCfg.on && (state.bombNext || (bombCfg.every > 0 && state.handNumber % bombCfg.every === 0));
+  state.bombNext = false;
+  state.bomb = bomb;
+  state.straddleSeat = -1;
+  if (bomb) {
+    // 💣 todos põem o mesmo valor, sem blinds nem apostas pré-flop: a mão começa no flop
+    const amount = bombCfg.bb * state.blinds.bb;
+    for (const s of state.seats) {
+      if (!s || !s.inHand) continue;
+      const a = Math.min(amount, s.stack);
+      s.stack -= a; s.committed += a;
+      if (s.stack === 0) s.allIn = true;
+      s.lastAction = '';
+    }
+    log(state, `💣 Bomb pot: cada um colocou ${amount}`);
+    state.phase = 'preflop';
+    dealStreet(state, ctx);
+    state.currentBet = 0;
+    state.minRaise = state.blinds.bb;
+    const canBet = state.seats.filter((s) => s && s.inHand && !s.folded && !s.allIn);
+    if (canBet.length <= 1) { startRunout(state, ctx, now); return ctx; }
+    state.toAct = state.dealer;
+    advanceTurn(state, ctx, now);
+    return ctx;
+  }
   if (state.blinds.ante > 0) {
     // ante: ficha "morta" que todos colocam no pote antes dos blinds
     for (const s of state.seats) {
@@ -551,9 +668,24 @@ function startHand(state, now = Date.now(), randInt) {
   state.phase = 'preflop';
   state.currentBet = state.blinds.bb;
   state.minRaise = state.blinds.bb;
-
-  const ctx = { deck, hands };
   state.toAct = state.bbSeat;
+
+  // straddle: o primeiro a falar (depois do BB) aposta 2 BB às cegas e fala por último no pré-flop
+  if (state.settings.allowStraddle && eligible.length >= 3) {
+    const utg = nextSeat(state, state.bbSeat, inHand);
+    const u = state.seats[utg];
+    const amt = state.blinds.bb * 2;
+    if (u && u.straddleOn && u.stack > amt) {
+      putChips(u, amt);
+      u.lastAction = 'Straddle';
+      state.currentBet = amt;
+      state.minRaise = amt; // próximo aumento: no mínimo para 4 BB
+      state.straddleSeat = utg;
+      state.toAct = utg;
+      log(state, `${u.name} fez straddle de ${amt}`);
+    }
+  }
+
   advanceTurn(state, ctx, now);
   return ctx;
 }
@@ -688,7 +820,7 @@ function advanceTurn(state, ctx, now) {
 
   const canBet = state.seats.filter((s) => s && s.inHand && !s.folded && !s.allIn);
   if (state.phase === 'river' || canBet.length <= 1) {
-    while (state.board.length < 5) dealStreet(state, ctx);
+    if (state.board.length < 5) { startRunout(state, ctx, now); return; }
     finishHand(state, ctx, now, true);
     return;
   }
@@ -696,6 +828,106 @@ function advanceTurn(state, ctx, now) {
   for (const s of state.seats) if (s && s.inHand && !s.folded && !s.allIn) s.lastAction = '';
   state.toAct = state.dealer;
   advanceTurn(state, ctx, now);
+}
+
+/** Ninguém mais pode apostar: abre as cartas de quem está na mão e vira a mesa aos poucos. */
+function startRunout(state, ctx, now) {
+  state.toAct = -1;
+  state.deadline = 0;
+  state.usingBank = false;
+  for (const s of state.seats) {
+    if (s && s.inHand && !s.folded) s.shown = (ctx.hands[s.uid] || []).slice();
+  }
+  state.runout = { nextAt: now + RUNOUT_FIRST_MS, equity: null, startedAt: now };
+  log(state, 'All-in! Cartas abertas');
+}
+
+/* Avaliador rápido de 7 cartas (mesma pontuação do bestHand, sem criar objetos).
+   Carta como inteiro: (valor - 2) * 4 + naipe. */
+const CNT = new Int8Array(15);
+const cardInt = (c) => RANKS.indexOf(c[0]) * 4 + SUITS.indexOf(c[1]);
+function straightHigh(m) {
+  if (m & (1 << 14)) m |= 2;
+  for (let h = 14; h >= 5; h--) { const w = 31 << (h - 4); if ((m & w) === w) return h; }
+  return 0;
+}
+function pack(cat, t) {
+  let v = cat;
+  for (let i = 0; i < 5; i++) v = v * 15 + (t[i] || 0);
+  return v;
+}
+function score7(cards) {
+  CNT.fill(0);
+  const sc = [0, 0, 0, 0], sm = [0, 0, 0, 0];
+  let rm = 0;
+  for (let i = 0; i < cards.length; i++) {
+    const c = cards[i], r = (c >> 2) + 2, su = c & 3;
+    CNT[r]++; sc[su]++; sm[su] |= 1 << r; rm |= 1 << r;
+  }
+  let fs = -1;
+  for (let su = 0; su < 4; su++) if (sc[su] >= 5) fs = su;
+  if (fs >= 0) { const h = straightHigh(sm[fs]); if (h) return pack(8, [h]); }
+  let quad = 0; const trips = [], pairs = [], singles = [];
+  for (let r = 14; r >= 2; r--) {
+    const n = CNT[r];
+    if (n === 4) quad = r; else if (n === 3) trips.push(r); else if (n === 2) pairs.push(r); else if (n === 1) singles.push(r);
+  }
+  if (quad) {
+    let k = 0; for (let r = 14; r >= 2; r--) if (r !== quad && CNT[r]) { k = r; break; }
+    return pack(7, [quad, k]);
+  }
+  if (trips.length && (trips.length > 1 || pairs.length)) return pack(6, [trips[0], Math.max(trips[1] || 0, pairs[0] || 0)]);
+  if (fs >= 0) {
+    const top = []; for (let r = 14; r >= 2 && top.length < 5; r--) if (sm[fs] & (1 << r)) top.push(r);
+    return pack(5, top);
+  }
+  const sh = straightHigh(rm);
+  if (sh) return pack(4, [sh]);
+  if (trips.length) return pack(3, [trips[0], singles[0], singles[1]]);
+  if (pairs.length >= 2) return pack(2, [pairs[0], pairs[1], Math.max(pairs[2] || 0, singles[0] || 0)]);
+  if (pairs.length === 1) return pack(1, [pairs[0], singles[0], singles[1], singles[2]]);
+  return pack(0, singles.slice(0, 5));
+}
+
+/**
+ * Chance de vitória de cada jogador que está na mão (empates divididos).
+ * Flop/turn: conta todas as combinações. Pré-flop: sorteia `samples` mesas.
+ * Retorna { [seat]: porcentagem }.
+ */
+function equity(state, ctx, samples = 3000, rnd = Math.random) {
+  const alive = [];
+  state.seats.forEach((s, i) => { if (s && s.inHand && !s.folded && ctx.hands[s.uid]) alive.push(i); });
+  if (alive.length < 2) return Object.fromEntries(alive.map((i) => [i, 100]));
+  const hands = alive.map((i) => ctx.hands[state.seats[i].uid].map(cardInt));
+  const board = state.board.map(cardInt);
+  const known = new Set([...board, ...hands.flat()]);
+  const deck = []; for (let c = 0; c < 52; c++) if (!known.has(c)) deck.push(c);
+  const need = 5 - board.length;
+  const wins = alive.map(() => 0);
+  let total = 0;
+  const judge = (b) => {
+    let best = -1; const sc = new Array(hands.length);
+    for (let k = 0; k < hands.length; k++) { sc[k] = score7(hands[k].concat(b)); if (sc[k] > best) best = sc[k]; }
+    let n = 0; for (let k = 0; k < sc.length; k++) if (sc[k] === best) n++;
+    for (let k = 0; k < sc.length; k++) if (sc[k] === best) wins[k] += 1 / n;
+    total++;
+  };
+  if (need === 0) judge(board);
+  else if (need <= 2) {
+    for (const idx of combinations(deck.length, need)) judge(board.concat(idx.map((i) => deck[i])));
+  } else {
+    const d = deck.slice();
+    for (let t = 0; t < samples; t++) {
+      for (let j = 0; j < need; j++) {
+        const r = j + Math.floor(rnd() * (d.length - j));
+        const tmp = d[j]; d[j] = d[r]; d[r] = tmp;
+      }
+      judge(board.concat(d.slice(0, need)));
+    }
+  }
+  const out = {};
+  alive.forEach((i, k) => { out[i] = Math.round((wins[k] / total) * 1000) / 10; });
+  return out;
 }
 
 function dealStreet(state, ctx) {
@@ -736,6 +968,7 @@ function buildPots(seats) {
 }
 
 function finishHand(state, ctx, now, showdown) {
+  state.runout = null;
   const seats = state.seats;
   const pots = buildPots(seats);
   const results = [];
@@ -813,6 +1046,15 @@ function finishHand(state, ctx, now, showdown) {
     }
   }
 
+  /* todo mundo desistiu: revela automaticamente a próxima rua (só para ver o que viria)
+     pré-flop → flop, flop → turn, turn → river. A 1ª carta do baralho é a queimada. */
+  state.rabbit = null;
+  if (!showdown && ctx && Array.isArray(ctx.deck)) {
+    const n = state.board.length;
+    if (n === 0) state.rabbit = ctx.deck.slice(1, 4);
+    else if (n < 5) state.rabbit = ctx.deck.slice(1, 2);
+  }
+
   /* todo mundo desistiu: o vencedor pode escolher mostrar as cartas */
   if (!showdown) {
     const w = seats.findIndex((s) => s && s.inHand && !s.folded);
@@ -847,18 +1089,26 @@ function finishHand(state, ctx, now, showdown) {
   }
 }
 
-/** O vencedor de uma mão sem showdown decide mostrar as cartas. */
-function showCards(state, ctx, uid) {
+/**
+ * O vencedor de uma mão sem showdown decide mostrar as cartas:
+ * which = 0 (só a 1ª), 1 (só a 2ª) ou 'both' (as duas). Dá para mostrar uma e depois a outra.
+ */
+function showCards(state, ctx, uid, which = 'both') {
   const i = seatOf(state, uid);
   const o = state.showOffer;
   if (i < 0 || !o || o.seat !== i || state.phase !== 'showdown' || o.handNumber !== state.handNumber) {
     throw new GameError('Não dá para mostrar agora');
   }
+  if (which !== 'both' && which !== 0 && which !== 1) throw new GameError('Escolha qual carta mostrar');
   const cards = ctx.hands && ctx.hands[uid];
   if (!cards) throw new GameError('Cartas não encontradas');
-  state.seats[i].shown = cards.slice();
-  state.showOffer = null;
-  log(state, `${state.seats[i].name} mostrou as cartas`);
+  const s = state.seats[i];
+  const shown = Array.isArray(s.shown) ? s.shown.slice() : [null, null];
+  if (which === 'both') { shown[0] = cards[0]; shown[1] = cards[1]; }
+  else shown[which] = cards[which];
+  s.shown = shown;
+  if (shown[0] && shown[1]) state.showOffer = null;
+  log(state, which === 'both' ? `${s.name} mostrou as cartas` : `${s.name} mostrou uma carta`);
 }
 
 /** Remove quem pediu para sair e zera marcações antes da próxima mão. */
@@ -883,6 +1133,17 @@ function cleanupAfterHand(state) {
  *   null               – nada a fazer
  */
 function tick(state, ctx, now = Date.now(), randInt) {
+  if (state.runout && handActive(state)) {
+    if (now < state.runout.nextAt) return null;
+    if (state.board.length < 5) {
+      dealStreet(state, ctx);
+      state.runout.equity = null; // o anfitrião recalcula
+      state.runout.nextAt = now + (state.board.length < 5 ? RUNOUT_STREET_MS : RUNOUT_END_MS);
+      return { type: 'runout' };
+    }
+    finishHand(state, ctx, now, true);
+    return { type: 'showdown' };
+  }
   const cur = handActive(state) && state.toAct >= 0 ? state.seats[state.toAct] : null;
   if (cur && cur.sitOut) {
     // offline joga na hora (passa ou desiste)
@@ -912,6 +1173,17 @@ function tick(state, ctx, now = Date.now(), randInt) {
   if (state.tourney && !state.tourney.finished && !handActive(state) && waitingReentry(state).length && !reentryOpen(state, now)) {
     checkTourneyEnd(state, now);
     return { type: 'reentry-closed' };
+  }
+  // Spin & Gold: a primeira mão começa quando a roleta termina
+  if (state.phase === 'waiting' && !state.started && state.startAt && now >= state.startAt) {
+    state.startAt = 0;
+    if (state.seats.filter((s) => canPlayNextHand(state, s)).length < 2) {
+      state.spin = null;
+      log(state, 'Spin cancelado: faltam jogadores');
+      return { type: 'waiting' };
+    }
+    const newCtx = startHand(state, now, randInt);
+    return { type: 'nexthand', ctx: newCtx };
   }
   // jogo parado esperando jogadores (ex.: recompra/reentrada): recomeça sozinho
   if (state.phase === 'waiting' && state.started && !(state.tourney && state.tourney.finished)
@@ -995,6 +1267,6 @@ return {
   cleanName, cleanSettings, createRoomState, addPlayer, removePlayer, seatOf,
   startHand, legalActions, act, tick, rebuy, setSitOut, buildPots, handActive,
   totalChips, canPlayNextHand, secureRandInt, MAX_TIMEOUTS_BEFORE_SITOUT,
-  showCards, newTournament, blindLevel, structure, isTourney, reenter, declineReentry, reentryOpen,
+  showCards, newTournament, equity, drawSpin, setStraddle, callBomb, isSpin, SPIN, SPIN_PRESETS, score7, cardInt, blindLevel, structure, isTourney, reenter, declineReentry, reentryOpen,
 };
 }));

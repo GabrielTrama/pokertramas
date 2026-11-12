@@ -3,6 +3,13 @@ const test = require('node:test');
 const assert = require('node:assert');
 const G = require('../www/engine.js');
 
+/* Nos testes antigos, o all-in termina na hora: estas versões completam a "virada" da mesa sozinhas. */
+const _act = G.act, _tick = G.tick, _start = G.startHand;
+const finishRunout = (st, ctx, r) => { let g = 0; while (st.runout && g++ < 10) _tick(st, ctx, st.runout.nextAt, r); };
+G.act = (st, ctx, uid, action, amount, now) => { _act(st, ctx, uid, action, amount, now); finishRunout(st, ctx); };
+G.tick = (st, ctx, now, r) => { const res = _tick(st, ctx, now, r); finishRunout(st, res && res.ctx ? res.ctx : ctx, r); return res; };
+G.startHand = (st, now, r) => { const c = _start(st, now, r); finishRunout(st, c, r); return c; };
+
 const h = (s) => s.split(' ');
 const best = (s) => G.bestHand(h(s));
 
@@ -481,4 +488,254 @@ test('simulação de torneios (com e sem reentrada): sempre termina com campeão
     const places = st.tourney.places.map((p) => p.place);
     assert.deepEqual(places, Array.from({ length: n }, (_, i) => i + 1), JSON.stringify(st.tourney.places));
   }
+});
+
+test('cash começa com 5.000 fichas; torneio com 20.000', () => {
+  const cash = G.createRoomState('C', 'a', 'A', { mode: 'cash' });
+  assert.equal(cash.settings.startingStack, 5000);
+  assert.equal(cash.seats[0].stack, 5000);
+  assert.equal(cash.settings.allowRebuy, true);
+  const t = G.createRoomState('T', 'a', 'A', {});
+  assert.equal(t.settings.startingStack, 20000);
+  const custom = G.createRoomState('C', 'a', 'A', { mode: 'cash', startingStack: 8000 });
+  assert.equal(custom.settings.startingStack, 8000);
+});
+
+
+/* ===================== all-in: cartas abertas e porcentagem ===================== */
+
+test('all-in: abre as cartas, vira a mesa por etapas e calcula a chance', () => {
+  const st = table(3);
+  const ctx = _start(st, 0, noShuffle());
+  _act(st, ctx, 'u0', 'raise', 1000, 10);
+  _act(st, ctx, 'u1', 'call', 0, 20);
+  _act(st, ctx, 'u2', 'call', 0, 30);
+  assert.ok(st.runout, 'deveria entrar no modo all-in');
+  assert.equal(st.phase, 'preflop');
+  assert.equal(st.board.length, 0);
+  assert.equal(st.toAct, -1);
+  for (const s of st.seats.slice(0, 3)) assert.deepEqual(s.shown, ctx.hands[s.uid]);
+  assert.throws(() => _act(st, ctx, 'u0', 'check', 0, 40), /vez/);
+  const eq = G.equity(st, ctx, 2000);
+  const sum = Object.values(eq).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(sum - 100) < 1, `soma ${sum}`);
+  assert.equal(_tick(st, ctx, st.runout.nextAt - 1), null);
+  _tick(st, ctx, st.runout.nextAt); assert.equal(st.board.length, 3);
+  _tick(st, ctx, st.runout.nextAt); assert.equal(st.board.length, 4);
+  _tick(st, ctx, st.runout.nextAt); assert.equal(st.board.length, 5);
+  assert.ok(st.runout && G.handActive(st));
+  const final = G.equity(st, ctx);
+  assert.ok(Object.values(final).every((v) => v === 0 || v === 100 || v % 1 >= 0));
+  _tick(st, ctx, st.runout.nextAt);
+  assert.equal(st.phase, 'showdown');
+  assert.equal(st.runout, null);
+  assert.equal(G.totalChips(st), 3000);
+});
+
+test('porcentagem: casos conhecidos', () => {
+  const mk = (board, a, b, c) => {
+    const st = table(c ? 3 : 2);
+    st.board = board ? board.split(' ') : [];
+    st.seats.forEach((s) => { if (s) { s.inHand = true; s.folded = false; } });
+    const ctx = { hands: { u0: a.split(' '), u1: b.split(' '), ...(c ? { u2: c.split(' ') } : {}) } };
+    return G.equity(st, ctx, 20000);
+  };
+  // AA x KK pré-flop ≈ 82% (sorteio: margem de ±1,5)
+  let e = mk('', 'As Ah', 'Ks Kh');
+  assert.ok(Math.abs(e[0] - 82) < 1.5, JSON.stringify(e));
+  // flop exato: AK x 22 em K-7-3 → AK tem ~91%
+  e = mk('Kd 7c 3h', 'As Kc', '2s 2d');
+  assert.ok(e[0] > 88 && e[0] < 93, JSON.stringify(e));
+  // river: resultado definido
+  e = mk('Kd 7c 3h 9s 4d', 'As Kc', '2s 2d');
+  assert.deepEqual(e, { 0: 100, 1: 0 });
+  // mesa joga para os dois: 50/50
+  e = mk('As Ks Qs Js Ts', '2c 3d', '4h 5c');
+  assert.deepEqual(e, { 0: 50, 1: 50 });
+  // três jogadores no turn (exato), soma 100
+  e = mk('Qh 8c 5d 2s', 'Ah Kh', 'Qc Jc', '8h 8d');
+  assert.ok(Math.abs(e[0] + e[1] + e[2] - 100) < 0.5, JSON.stringify(e));
+  assert.ok(e[2] > 90, JSON.stringify(e));
+});
+
+test('jogador sai no meio do all-in: o resto continua normalmente', () => {
+  const st = table(3, [1000, 300, 1000]);
+  const ctx = _start(st, 0, noShuffle());
+  _act(st, ctx, 'u0', 'call', 0, 10);
+  _act(st, ctx, 'u1', 'raise', 300, 20); // all-in curto
+  _act(st, ctx, 'u2', 'call', 0, 30);
+  _act(st, ctx, 'u0', 'call', 0, 40);
+  // u0 e u2 ainda podem apostar no flop: não é runout
+  assert.equal(st.runout || null, null);
+  assert.equal(st.phase, 'flop');
+});
+
+test('mostrar uma carta só, depois a outra', () => {
+  const st = table(3);
+  const ctx = _start(st, 0, noShuffle());
+  _act(st, ctx, 'u0', 'fold', 0, 1);
+  _act(st, ctx, 'u1', 'fold', 0, 2);
+  const [c0, c1] = ctx.hands.u2;
+  assert.throws(() => G.showCards(st, ctx, 'u2', 2), /Escolha/);
+  G.showCards(st, ctx, 'u2', 1);
+  assert.deepEqual(st.seats[2].shown, [null, c1]);
+  assert.ok(st.showOffer, 'ainda pode mostrar a outra');
+  assert.ok(st.log.some((l) => l.includes('mostrou uma carta')));
+  G.showCards(st, ctx, 'u2', 0);
+  assert.deepEqual(st.seats[2].shown, [c0, c1]);
+  assert.equal(st.showOffer, null);
+  assert.throws(() => G.showCards(st, ctx, 'u2', 'both'), /mostrar agora/);
+  // nova mão limpa o que foi mostrado
+  _tick(st, ctx, st.nextHandAt);
+  assert.equal(st.seats[2].shown, null);
+});
+
+test('todos desistem: revela automaticamente a próxima rua (sem mudar o resultado)', () => {
+  // pré-flop → flop
+  let st = table(3);
+  let ctx = _start(st, 0, noShuffle());
+  const deck = ctx.deck.slice();
+  _act(st, ctx, 'u0', 'fold', 0, 1); _act(st, ctx, 'u1', 'fold', 0, 2);
+  assert.deepEqual(st.board, []);
+  assert.deepEqual(st.rabbit, deck.slice(1, 4)); // queima 1, mostra 3
+  // flop → turn
+  st = table(3); ctx = _start(st, 0, noShuffle());
+  _act(st, ctx, 'u0', 'call', 0, 1); _act(st, ctx, 'u1', 'call', 0, 2); _act(st, ctx, 'u2', 'check', 0, 3);
+  assert.equal(st.board.length, 3);
+  const d2 = ctx.deck.slice();
+  const first = st.seats[st.toAct].uid;
+  _act(st, ctx, first, 'raise', 100, 4);
+  for (const uid of ['u0', 'u1', 'u2']) if (G.handActive(st) && st.seats[st.toAct].uid === uid) _act(st, ctx, uid, 'fold', 0, 5);
+  while (G.handActive(st)) _act(st, ctx, st.seats[st.toAct].uid, 'fold', 0, 6);
+  assert.equal(st.board.length, 3);
+  assert.deepEqual(st.rabbit, d2.slice(1, 2));
+  // nova mão limpa
+  _tick(st, ctx, st.nextHandAt);
+  assert.equal(st.rabbit, null);
+  // showdown normal não revela nada extra
+  st = table(2); ctx = _start(st, 0, noShuffle());
+  G.act(st, ctx, 'u0', 'raise', 1000, 1); G.act(st, ctx, 'u1', 'call', 0, 2);
+  assert.equal(st.board.length, 5);
+  assert.equal(st.rabbit, null);
+});
+
+/* ===================== Spin & Gold, straddle, bomb pot ===================== */
+
+test('Spin & Gold: formato fixo, sorteio, começa depois da roleta e gera resultado', () => {
+  const st = G.createRoomState('S', 'u0', 'P0', { mode: 'spin', startingStack: 99999, bigBlind: 999, spinPreset: 'gg' });
+  for (let i = 1; i < 4; i++) G.addPlayer(st, 'u' + i, 'P' + i);
+  assert.deepEqual([st.settings.startingStack, st.blinds.sb, st.blinds.bb, st.blinds.ante, st.settings.levelMinutes], [500, 10, 20, 0, 3]);
+  assert.equal(st.settings.reentryLevels, 0);
+  assert.equal(st.settings.spinPreset, 'gg');
+  assert.equal(G.blindLevel(st, 1).bb, 30);
+  const mult = G.drawSpin(st, 1000, () => 0.5);
+  assert.equal(mult, 2);
+  assert.equal(st.startAt, 1000 + G.SPIN.revealMs);
+  assert.throws(() => G.drawSpin(st, 1000), /já começou/);
+  assert.equal(G.tick(st, null, st.startAt - 1), null);
+  const r = _tick(st, null, st.startAt);
+  assert.equal(r.type, 'nexthand');
+  assert.equal(st.started, true);
+  // joga até o fim
+  let ctx = r.ctx, now = st.startAt, guard = 0;
+  while (!st.tourney.finished && guard++ < 5000) {
+    now += 1000;
+    if (G.handActive(st) && st.toAct >= 0) {
+      const la = G.legalActions(st, st.toAct);
+      G.act(st, ctx, st.seats[st.toAct].uid, la.canRaise ? 'raise' : 'call', la.maxRaiseTo, now);
+    } else {
+      const x = G.tick(st, ctx, Math.max(now, st.nextHandAt || 0));
+      if (x && x.ctx) ctx = x.ctx;
+    }
+  }
+  assert.ok(st.tourney.finished);
+  const res = st.tourney.result;
+  assert.equal(res.mode, 'spin');
+  assert.equal(res.mult, 2);
+  assert.equal(res.players.length, 4);
+  assert.equal(res.players[0].place, 1);
+  G.newTournament(st);
+  assert.equal(st.spin, null);
+});
+
+test('sorteio do Spin segue as chances do preset', () => {
+  const count = (preset) => {
+    const st = G.createRoomState('S', 'a', 'A', { mode: 'spin', spinPreset: preset });
+    G.addPlayer(st, 'b', 'B');
+    const c = {};
+    let seed = 7;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 20000; i++) { st.started = false; st.startAt = 0; const m = G.drawSpin(st, 0, rnd); c[m] = (c[m] || 0) + 1; }
+    return c;
+  };
+  const a = count('amigos');
+  assert.deepEqual(Object.keys(a).map(Number).sort((x, y) => x - y), [2, 3, 5, 10]);
+  assert.ok(Math.abs(a[2] / 200 - 60) < 2 && Math.abs(a[10] / 200 - 3) < 1, JSON.stringify(a));
+  const g = count('gg');
+  assert.ok(Math.abs(g[2] / 200 - 75) < 2, JSON.stringify(g));
+});
+
+test('straddle: UTG põe 2 BB, a ação começa depois dele e ele fala por último', () => {
+  const st = table(4); // botão 0, SB 1, BB 2, UTG 3
+  G.setStraddle(st, 'u3', true);
+  const ctx = _start(st, 0, noShuffle());
+  assert.equal(st.seats[3].bet, 40);
+  assert.equal(st.seats[3].lastAction, 'Straddle');
+  assert.equal(st.currentBet, 40);
+  assert.equal(st.toAct, 0); // depois do straddle
+  const la = G.legalActions(st, 0);
+  assert.equal(la.toCall, 40);
+  assert.equal(la.minRaiseTo, 80); // mínimo 4 BB
+  _act(st, ctx, 'u0', 'call', 0, 1);
+  _act(st, ctx, 'u1', 'call', 0, 2);
+  _act(st, ctx, 'u2', 'call', 0, 3);
+  assert.equal(st.toAct, 3, 'straddle tem a opção');
+  assert.equal(G.legalActions(st, 3).canCheck, true);
+  _act(st, ctx, 'u3', 'check', 0, 4);
+  assert.equal(st.phase, 'flop');
+  assert.equal(G.totalChips(st), 4000);
+});
+
+test('straddle: desligado na mesa, com 2 jogadores ou sem fichas não acontece', () => {
+  let st = table(4, null, { allowStraddle: false });
+  assert.throws(() => G.setStraddle(st, 'u3', true), /desligado/);
+  st = table(2); G.setStraddle(st, 'u0', true); G.setStraddle(st, 'u1', true);
+  _start(st, 0, noShuffle());
+  assert.equal(st.currentBet, 20);
+  st = table(4, [1000, 1000, 1000, 30]); G.setStraddle(st, 'u3', true);
+  _start(st, 0, noShuffle());
+  assert.equal(st.currentBet, 20);
+});
+
+test('bomb pot: todos põem 2 BB, sem blinds, a mão começa no flop', () => {
+  const st = table(3, null, { bomb: { on: true, every: 0, bb: 2 } });
+  G.callBomb(st, true);
+  const ctx = _start(st, 0, noShuffle());
+  assert.equal(st.bomb, true);
+  assert.equal(st.phase, 'flop');
+  assert.equal(st.board.length, 3);
+  assert.deepEqual(st.seats.slice(0, 3).map((s) => [s.committed, s.bet]), [[40, 0], [40, 0], [40, 0]]);
+  assert.equal(st.currentBet, 0);
+  assert.equal(st.toAct, 1); // primeiro depois do botão
+  _act(st, ctx, 'u1', 'check', 0, 1); _act(st, ctx, 'u2', 'check', 0, 2); _act(st, ctx, 'u0', 'check', 0, 3);
+  assert.equal(st.phase, 'turn');
+  // próxima mão volta ao normal
+  while (G.handActive(st)) { const s = st.seats[st.toAct]; _act(st, ctx, s.uid, 'check', 0, 4); }
+  G.tick(st, ctx, st.nextHandAt);
+  assert.equal(st.bomb, false);
+  assert.equal(st.phase, 'preflop');
+});
+
+test('bomb pot automático a cada N mãos e desligado quando a chave está off', () => {
+  const st = table(3, null, { bomb: { on: true, every: 3, bb: 1 } });
+  let ctx = _start(st, 0, noShuffle());
+  const bombs = [];
+  for (let h = 0; h < 6; h++) {
+    bombs.push(st.bomb);
+    while (G.handActive(st)) { const s = st.seats[st.toAct]; G.act(st, ctx, s.uid, G.legalActions(st, st.toAct).canCheck ? 'check' : 'fold', 0, 1); }
+    const r = G.tick(st, ctx, st.nextHandAt); ctx = r.ctx;
+  }
+  assert.deepEqual(bombs, [false, false, true, false, false, true]);
+  const off = table(3, null, { bomb: { on: false } });
+  assert.throws(() => G.callBomb(off), /desligado/);
 });
