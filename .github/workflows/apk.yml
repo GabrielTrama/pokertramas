@@ -27,6 +27,14 @@ jobs:
       - name: Compilar APK
         working-directory: android
         run: ./gradlew assembleDebug
+      - name: Conferir APK (assinatura e versão mínima do Android)
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          SIG=$("$BT/apksigner" verify --verbose --print-certs "$APK" 2>&1 | grep -E "Verifies|Verified using|certificate SHA-256|WARNING|ERROR" | tr '\n' ' ')
+          BADGE=$("$BT/aapt" dump badging "$APK" | grep -E "^package:|sdkVersion|targetSdkVersion" | tr '\n' ' ')
+          echo "::notice title=assinatura::$SIG"
+          echo "::notice title=pacote::$BADGE"
       - uses: actions/upload-artifact@v4
         with:
           name: PokerTrama-apk
