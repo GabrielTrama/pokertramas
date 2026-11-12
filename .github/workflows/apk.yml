@@ -1,0 +1,30 @@
+name: Gerar APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - name: Instalar dependências
+        run: npm install
+      - name: Testar regras do jogo
+        run: npm test
+      - name: Criar projeto Android
+        run: |
+          npx cap add android
+          npm run icons
+          npx cap sync android
+      - name: Compilar APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PokerTramaS-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
