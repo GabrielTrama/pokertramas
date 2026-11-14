@@ -1,6 +1,6 @@
 // PokerTrama — guarda os arquivos do app para abrir rápido. O jogo em si precisa de internet.
-const CACHE = 'pokertramas-p2p-v4';
-const SHELL = ['./', 'index.html', 'engine.js', 'peerjs.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'abertura.webp', 'abertura-chamas.jpg', 'logo-mesa.webp', 'dinheiro.webp',
+const CACHE = 'pokertramas-p2p-v5';
+const SHELL = ['./', 'index.html', 'engine.js', 'peerjs.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'abertura.webp', 'abertura-chamas.jpg', 'logo-mesa.webp',
   'fonts/big-shoulders-display-latin-600-normal.woff2', 'fonts/big-shoulders-display-latin-800-normal.woff2',
   'fonts/figtree-latin-400-normal.woff2', 'fonts/figtree-latin-500-normal.woff2',
   'fonts/figtree-latin-600-normal.woff2', 'fonts/figtree-latin-700-normal.woff2'];

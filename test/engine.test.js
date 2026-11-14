@@ -453,6 +453,81 @@ test('torneio offline continua recebendo cartas e desiste sozinho', () => {
   assert.equal(st.seats[1].folded, true);
 });
 
+test('torneio heads-up: se os dois jogadores ficam offline, o jogo pausa (não fica queimando blind sozinho)', () => {
+  const st = tourney(2);
+  const ctx = G.startHand(st, 0, noShuffle());
+  G.setSitOut(st, 'u0', true);
+  G.setSitOut(st, 'u1', true);
+  assert.equal(G.headsUpBothOffline(st), true);
+  // a mão em andamento termina sozinha (auto check/fold), e aí o jogo pausa em vez de recomeçar
+  let now = 0, t = null, guard = 0;
+  while (st.phase !== 'waiting' && guard++ < 50) { now += 2000; t = G.tick(st, ctx, now); }
+  assert.equal(st.phase, 'waiting');
+  assert.equal(st.headsUpPaused, true);
+  assert.equal(st.handNumber, 1); // não iniciou uma segunda mão sozinho
+  // volta um dos dois: o jogo recomeça sozinho de novo
+  G.setSitOut(st, 'u0', false);
+  const r = G.tick(st, ctx, now + 2000);
+  assert.equal(r.type, 'nexthand');
+  assert.equal(st.headsUpPaused, false);
+  assert.equal(st.handNumber, 2);
+});
+
+test('pausa por votação: maioria aprova, começa quando a mão termina e o relógio do torneio fica parado', () => {
+  const st = tourney(3);
+  let ctx = G.startHand(st, 0, noShuffle());
+  assert.throws(() => G.proposePause(st, 'u0', 7, 100), /5, 10 ou 15/);
+  G.proposePause(st, 'u0', 10, 100);
+  assert.equal(st.pauseVote.minutes, 10);
+  assert.throws(() => G.proposePause(st, 'u1', 5, 150), /votação aberta/);
+  G.votePause(st, 'u1', true, 200); // 2 de 3
+  assert.equal(st.pauseVote, null);
+  assert.equal(st.pause.minutes, 10);
+  assert.equal(st.pause.startedAt, 0); // ainda não começou: a mão está rolando
+  const startedAt = st.tourney.startedAt;
+  G.setSitOut(st, 'u0', true); G.setSitOut(st, 'u1', true); G.setSitOut(st, 'u2', true);
+  let now = 1000, g = 0;
+  while (!G.pauseActive(st) && g++ < 80) { now += 2000; const r = G.tick(st, ctx, now); if (r && r.ctx) ctx = r.ctx; }
+  assert.equal(G.pauseActive(st), true);
+  assert.equal(st.handNumber, 1);
+  G.setSitOut(st, 'u0', false); G.setSitOut(st, 'u1', false); G.setSitOut(st, 'u2', false);
+  const began = st.pause.startedAt;
+  assert.equal(G.tick(st, ctx, began + 9 * 60000), null); // segue parado
+  assert.equal(st.handNumber, 1);
+  const r = G.tick(st, ctx, began + 10 * 60000);
+  assert.equal(r.type, 'pauseend');
+  assert.equal(st.pause, null);
+  assert.equal(st.tourney.startedAt, startedAt + 10 * 60000);
+  const r2 = G.tick(st, ctx, began + 10 * 60000 + 500);
+  assert.equal(r2.type, 'nexthand');
+});
+
+test('pausa por votação: recusada pela maioria ou pelo tempo; "voltar agora" encerra antes', () => {
+  const st = tourney(4);
+  const ctx = G.startHand(st, 0, noShuffle());
+  G.proposePause(st, 'u0', 5, 0);
+  G.votePause(st, 'u1', false, 10);
+  assert.ok(st.pauseVote);
+  G.votePause(st, 'u2', false, 20); // 2 contra de 4: não tem mais como passar
+  assert.equal(st.pauseVote, null);
+  assert.equal(st.pause, undefined);
+  assert.throws(() => G.proposePause(st, 'u0', 5, 1000), /Espere um pouco/);
+  G.proposePause(st, 'u1', 15, 70000);
+  G.tick(st, ctx, 70000 + 31000); // ninguém mais votou
+  assert.equal(st.pauseVote, null);
+  assert.ok(!st.pause);
+  // aprovada com o jogo parado: começa na hora e acaba quando todos tocam em "voltar agora"
+  const s2 = tourney(2);
+  s2.started = true; s2.phase = 'waiting';
+  G.proposePause(s2, 'u0', 5, 0); G.votePause(s2, 'u1', true, 1);
+  G.tick(s2, {}, 10);
+  assert.equal(G.pauseActive(s2), true);
+  G.readyPause(s2, 'u0', 20);
+  assert.equal(G.pauseActive(s2), true);
+  G.readyPause(s2, 'u1', 30);
+  assert.equal(s2.pause, null);
+});
+
 test('simulação de torneios (com e sem reentrada): sempre termina com campeão e pódio completo', () => {
   let seed = 777;
   const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };

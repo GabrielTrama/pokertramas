@@ -386,6 +386,15 @@ function canPlayNextHand(state, s) {
   return isTourney(state) ? true : !s.sitOut;
 }
 
+/**
+ * Só restam 2 jogadores (torneio/spin) e os dois estão offline: não faz sentido continuar
+ * queimando blind/ante sozinho sem ninguém jogando, então o jogo pausa até alguém voltar.
+ */
+function headsUpBothOffline(state) {
+  const alive = state.seats.filter((s) => s && !s.leaving && !s.eliminated && !s.waitingReentry && s.stack > 0);
+  return alive.length === 2 && alive.every((s) => s.sitOut);
+}
+
 function nextSeat(state, from, pred) {
   for (let k = 1; k <= MAX_SEATS; k++) {
     const i = (from + k + MAX_SEATS) % MAX_SEATS;
@@ -508,6 +517,7 @@ function checkTourneyEnd(state, now) {
 function newTournament(state) {
   if (handActive(state)) throw new GameError('Espere a mão terminar');
   if (!isTourney(state)) throw new GameError('Esta mesa é cash');
+  state.pause = null; state.pauseVote = null;
   for (let i = 0; i < state.seats.length; i++) {
     const s = state.seats[i];
     if (!s) continue;
@@ -1133,6 +1143,9 @@ function cleanupAfterHand(state) {
  *   null               – nada a fazer
  */
 function tick(state, ctx, now = Date.now(), randInt) {
+  if (state.headsUpPaused && !headsUpBothOffline(state)) state.headsUpPaused = false;
+  // votação de pausa: fecha no tempo ou quando alguém sai/fica offline e a conta muda
+  if (state.pauseVote && resolvePauseVote(state, now, now >= state.pauseVote.endsAt)) return { type: 'pausevote' };
   if (state.runout && handActive(state)) {
     if (now < state.runout.nextAt) return null;
     if (state.board.length < 5) {
@@ -1170,6 +1183,20 @@ function tick(state, ctx, now = Date.now(), randInt) {
     }
     return { type: 'timeout' };
   }
+  if (pauseActive(state)) {
+    if (now < state.pause.until) return null;
+    endPause(state, now);
+    return { type: 'pauseend' };
+  }
+  // pausa aprovada começa quando a mão termina
+  if (state.pause && !handActive(state) && (state.phase === 'waiting' || (state.phase === 'showdown' && state.nextHandAt && now >= state.nextHandAt))) {
+    if (state.tourney && state.tourney.finished) { state.pause = null; return { type: 'pauseend' }; }
+    if (state.phase === 'showdown') { cleanupAfterHand(state); state.phase = 'waiting'; state.nextHandAt = 0; }
+    state.pause.startedAt = now;
+    state.pause.until = now + state.pause.minutes * 60000;
+    log(state, `Pausa de ${state.pause.minutes} min começou`);
+    return { type: 'paused' };
+  }
   if (state.tourney && !state.tourney.finished && !handActive(state) && waitingReentry(state).length && !reentryOpen(state, now)) {
     checkTourneyEnd(state, now);
     return { type: 'reentry-closed' };
@@ -1187,17 +1214,29 @@ function tick(state, ctx, now = Date.now(), randInt) {
   }
   // jogo parado esperando jogadores (ex.: recompra/reentrada): recomeça sozinho
   if (state.phase === 'waiting' && state.started && !(state.tourney && state.tourney.finished)
-      && state.seats.filter((s) => canPlayNextHand(state, s)).length >= 2) {
+      && state.seats.filter((s) => canPlayNextHand(state, s)).length >= 2
+      && !headsUpBothOffline(state)) {
     const newCtx = startHand(state, now, randInt);
     return { type: 'nexthand', ctx: newCtx };
+  }
+  if (state.phase === 'waiting' && state.started && headsUpBothOffline(state) && !state.headsUpPaused) {
+    state.headsUpPaused = true;
+    log(state, 'Jogo pausado: os dois jogadores ficaram offline.');
+    return { type: 'paused' };
   }
   if (state.phase === 'showdown' && state.nextHandAt && now >= state.nextHandAt) {
     cleanupAfterHand(state);
     const eligible = state.seats.filter((s) => canPlayNextHand(state, s));
-    if (eligible.length < 2) {
+    const paused = headsUpBothOffline(state);
+    if (eligible.length < 2 || paused) {
       state.phase = 'waiting';
       state.nextHandAt = 0;
-      log(state, waitingReentry(state).length ? 'Esperando reentrada…' : 'Aguardando jogadores com fichas…');
+      if (paused) {
+        state.headsUpPaused = true;
+        log(state, 'Jogo pausado: os dois jogadores ficaram offline.');
+      } else {
+        log(state, waitingReentry(state).length ? 'Esperando reentrada…' : 'Aguardando jogadores com fichas…');
+      }
       return { type: 'waiting' };
     }
     const newCtx = startHand(state, now, randInt);
@@ -1256,6 +1295,90 @@ function setSitOut(state, uid, value) {
   log(state, value ? `${s.name} ficou offline` : `${s.name} voltou para a mesa`);
 }
 
+/* ------------------------------------------------------------------ */
+/* Pausa por votação (5, 10 ou 15 min)                                 */
+/* ------------------------------------------------------------------ */
+const PAUSE_OPTIONS = [5, 10, 15];
+const PAUSE_VOTE_MS = 30000;
+const PAUSE_COOLDOWN_MS = 60000;
+
+/** Quem vota: quem está na mesa, jogando e online. */
+const pauseVoters = (state) => state.seats.filter((s) => s && !s.leaving && !s.eliminated && !s.sitOut);
+const pauseActive = (state) => !!(state.pause && state.pause.startedAt);
+
+function resolvePauseVote(state, now, timedOut) {
+  const v = state.pauseVote;
+  if (!v) return false;
+  const voters = pauseVoters(state);
+  const n = voters.length;
+  const yes = voters.filter((s) => v.yes.includes(s.uid)).length;
+  const no = voters.filter((s) => v.no.includes(s.uid)).length;
+  if (n && yes * 2 > n) {
+    state.pauseVote = null;
+    state.pause = { minutes: v.minutes, startedAt: 0, until: 0, ready: [] };
+    log(state, `Pausa de ${v.minutes} min aprovada (${yes} de ${n})`);
+    return true;
+  }
+  if (!n || no * 2 >= n || timedOut) {
+    state.pauseVote = null;
+    state.pauseCooldown = now + PAUSE_COOLDOWN_MS;
+    log(state, `Pausa de ${v.minutes} min recusada`);
+    return true;
+  }
+  return false;
+}
+
+function proposePause(state, uid, minutes, now = Date.now()) {
+  const i = seatOf(state, uid);
+  if (i < 0) throw new GameError('Você não está na mesa');
+  const s = state.seats[i];
+  minutes = +minutes;
+  if (!PAUSE_OPTIONS.includes(minutes)) throw new GameError('Escolha 5, 10 ou 15 minutos');
+  if (!state.started || (state.tourney && state.tourney.finished)) throw new GameError('O jogo não está rodando');
+  if (s.eliminated || s.sitOut) throw new GameError('Só quem está jogando pode pedir pausa');
+  if (state.pause) throw new GameError('Já tem uma pausa combinada');
+  if (state.pauseVote) throw new GameError('Já tem uma votação aberta');
+  if (state.pauseCooldown && now < state.pauseCooldown) throw new GameError('Espere um pouco para pedir outra pausa');
+  state.pauseVote = { by: i, name: s.name, minutes, yes: [uid], no: [], endsAt: now + PAUSE_VOTE_MS };
+  log(state, `${s.name} pediu pausa de ${minutes} min`);
+  resolvePauseVote(state, now, false);
+}
+
+function votePause(state, uid, yes, now = Date.now()) {
+  const i = seatOf(state, uid);
+  if (i < 0) throw new GameError('Você não está na mesa');
+  const v = state.pauseVote;
+  if (!v) throw new GameError('A votação já terminou');
+  if (!pauseVoters(state).includes(state.seats[i])) throw new GameError('Só quem está jogando vota');
+  v.yes = v.yes.filter((u) => u !== uid);
+  v.no = v.no.filter((u) => u !== uid);
+  (yes ? v.yes : v.no).push(uid);
+  resolvePauseVote(state, now, false);
+}
+
+function endPause(state, now) {
+  const p = state.pause;
+  if (!p) return;
+  if (p.startedAt && state.tourney && !state.tourney.finished) {
+    const gone = Math.max(0, now - p.startedAt); // o relógio do torneio fica parado durante a pausa
+    state.tourney.startedAt += gone;
+    if (state.tourney.nextLevelAt) state.tourney.nextLevelAt += gone;
+  }
+  state.pause = null;
+  log(state, 'Pausa terminou');
+}
+
+/** "Voltar agora": a pausa acaba antes quando todo mundo que está jogando topa. */
+function readyPause(state, uid, now = Date.now()) {
+  const i = seatOf(state, uid);
+  if (i < 0) throw new GameError('Você não está na mesa');
+  const p = state.pause;
+  if (!p) throw new GameError('Não tem pausa agora');
+  if (!p.ready.includes(uid)) p.ready.push(uid);
+  const voters = pauseVoters(state);
+  if (voters.length && voters.every((s) => p.ready.includes(s.uid))) endPause(state, now);
+}
+
 function totalChips(state) {
   return state.seats.reduce((t, s) => t + (s ? s.stack + (handActive(state) ? s.committed : 0) : 0), 0);
 }
@@ -1266,7 +1389,7 @@ return {
   newDeck, shuffle, eval5, bestHand, HAND_NAMES,
   cleanName, cleanSettings, createRoomState, addPlayer, removePlayer, seatOf,
   startHand, legalActions, act, tick, rebuy, setSitOut, buildPots, handActive,
-  totalChips, canPlayNextHand, secureRandInt, MAX_TIMEOUTS_BEFORE_SITOUT,
+  totalChips, canPlayNextHand, headsUpBothOffline, proposePause, votePause, readyPause, pauseActive, pauseVoters, PAUSE_OPTIONS, secureRandInt, MAX_TIMEOUTS_BEFORE_SITOUT,
   showCards, newTournament, equity, drawSpin, setStraddle, callBomb, isSpin, SPIN, SPIN_PRESETS, score7, cardInt, blindLevel, structure, isTourney, reenter, declineReentry, reentryOpen,
 };
 }));

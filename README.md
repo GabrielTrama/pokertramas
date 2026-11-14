@@ -64,6 +64,9 @@ Valem no Cash e nos torneios, e o anfitrião liga ou desliga em "Ajustes da mesa
 - **BB** no topo: mostra todos os valores em big blinds.
 - **Digitar o valor da aposta**: em "Aumentar", toque no número e digite (ex.: 1.350 ou 2k; em BB, 12,5). Abaixo do mínimo o botão trava e mostra o mínimo; acima do máximo vira all-in.
 - **All-in com porcentagem**: quando ninguém mais pode apostar, aparece "ALL-IN", as cartas de todos abrem e cada um vê a chance de vitória (%). A mesa vira uma rua de cada vez (flop, turn, river) e as porcentagens se atualizam a cada carta.
+- **Pausa por votação:** no menu (•••) → "Pedir pausa" de 5, 10 ou 15 min. Quem está jogando vota em 30 s; com a maioria a favor, o jogo para quando a mão termina e o relógio do torneio fica parado. Volta sozinho no fim do tempo, ou antes se todos tocarem em "Voltar agora".
+- **Os dois offline no mano a mano** (Torneio e Spin & Gold): o jogo pausa em vez de queimar blind sozinho, e volta quando um dos dois retorna.
+- **Treino contra bots:** na tela inicial, "Treinar: Spin & Gold contra 3 bots". Não conta para o ranking da temporada.
 - **Caiu a conexão?** Se a tela apagou, você trocou de app ou a internet oscilou, o jogo reconecta sozinho quando você volta. Ficou fora menos de 20 s: nem aparece como offline. Ficou mais (até 10 min): volta para a mesa sozinho, sem tocar no balão. Quem escolheu "Ficar offline" continua offline até tocar no balão.
 - **Sua vez em outra aba** (computador): o título da aba pisca "🔔 Sua vez!" e toca um som.
 - **Pré-ações**: fora da sua vez, marque "Passar/Desistir", "Passar" ou "Pagar qualquer"; quando a vez chega, o app joga sozinho.
